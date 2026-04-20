@@ -21,17 +21,14 @@ app.use(session({
     cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 } // 1h
 }));
 
-// Assets statiques
-app.use(express.static(path.join(__dirname, '../public')));
+// Frontend (HTML/CSS/JS)
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Views
-app.use('/views', express.static(path.join(__dirname, 'views')));
-
-// Routes (à brancher au fur et à mesure)
-// app.use('/auth',    require('./routes/auth'));
-// app.use('/tickets', require('./routes/tickets'));
-// app.use('/gate',    require('./routes/gate'));
-// app.use('/flag',    require('./routes/flag'));
+// Routes
+app.use('/auth',    require('./routes/auth'));
+app.use('/billets', require('./routes/billets'));
+app.use('/gate',    require('./routes/gate'));
+app.use('/flag',    require('./routes/flag'));
 
 // Route racine
 app.get('/', (req, res) => {

@@ -1,5 +1,12 @@
 vol404-ctf/
-├── src/
+├── frontend/          ← FRONT
+│   ├── index.html
+│   ├── login.html
+│   ├── dashboard.html
+│   ├── gate.html
+│   └── css/style.css
+│
+├── src/               ← Back
 │   ├── server.js                  ← point d'entrée, config Express
 │   │
 │   ├── models/                    ← M : données + logique BDD
