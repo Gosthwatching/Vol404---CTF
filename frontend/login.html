@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF - Vol 404 | Connexion</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="login-page">
+    <div class="login-wrapper">
+        <div class="airline-logo">✈</div>
+        <h1>Air France — Vol 404</h1>
+        <p class="subtitle">Espace passager — Authentification requise</p>
+
+        <form id="login-form">
+            <label for="username">Identifiant</label>
+            <input type="text" id="username" name="username" placeholder="ex : alice" autocomplete="username" required>
+
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" placeholder="••••••••••••" autocomplete="current-password" required>
+
+            <button type="submit">Embarquer</button>
+        </form>
+
+        <p id="error-message"></p>
+        <p class="footer-note">AF404 · Orly · Départ 14h35</p>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = '';
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    window.location.href = 'billet.html';
+                } else {
+                    // ⚠️ CTF — innerHTML intentionnel : XSS réfléchi possible via le message serveur
+                    errorMsg.innerHTML = data.message || 'Identifiants incorrects.';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Erreur de connexion au serveur.';
+            }
+        });
+    </script>
+</body>
+</html>

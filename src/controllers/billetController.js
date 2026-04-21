@@ -55,4 +55,20 @@ const searchTicket = async (req, res) => {
     });
 };
 
-module.exports = { getMyTicket, searchTicket };
+// GET /billets/passengers — liste de tous les passagers (accès libre, c'est voulu pour le CTF)
+const getAllPassengers = async (req, res) => {
+    const tickets = await Ticket.find({}).populate('userId', 'username');
+
+    const list = tickets.map(t => ({
+        passengerName: t.passengerName,
+        flightCode: t.flightCode,
+        seat: t.seat,
+        gate: t.gate,
+        departureTime: t.departureTime,
+        username: t.userId ? t.userId.username : '—'
+    }));
+
+    return res.json(list);
+};
+
+module.exports = { getMyTicket, searchTicket, getAllPassengers };

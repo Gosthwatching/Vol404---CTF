@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manifest Vol AF404</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #00ff99;
+      font-family: 'Courier New', monospace;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.4rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #00ff9955;
+      padding-bottom: 16px;
+      margin-bottom: 30px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #00ff9977;
+      margin-top: -20px;
+      margin-bottom: 30px;
+    }
+
+    table {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #001a0e;
+      color: #00ff99;
+      padding: 10px 14px;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: 1px solid #00ff9933;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #00ff9920;
+      color: #aaffcc;
+    }
+
+    tr:hover td {
+      background: #001a0e;
+      cursor: pointer;
+    }
+
+    .badge-admin {
+      background: #ff4444;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .badge-player {
+      background: #333;
+      color: #aaa;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    tr.alice-row td {
+      color: #fff;
+      background: #1a0000;
+    }
+
+    tr.alice-row:hover td {
+      background: #2a0000;
+    }
+
+    .badge-target {
+      background: #ff2222;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-left: 6px;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    #message {
+      text-align: center;
+      color: #ff4444;
+      margin-top: 40px;
+    }
+
+    .hint {
+      text-align: center;
+      color: #00ff9944;
+      font-size: 0.75rem;
+      margin-top: 40px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>✈ Manifest Vol AF404</h1>
+  <p class="subtitle">Accès restreint — Personnel navigant Air France</p>
+
+  <table id="passenger-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Passager</th>
+        <th>Login</th>
+        <th>Vol</th>
+        <th>Siège</th>
+        <th>Porte</th>
+        <th>Départ</th>
+      </tr>
+    </thead>
+    <tbody id="passenger-body">
+      <tr><td colspan="8" style="text-align:center;color:#555">Chargement...</td></tr>
+    </tbody>
+  </table>
+
+  <p id="message"></p>
+  <p class="hint">Indice : une faille sur la page de connexion permet de s'authentifier sans connaître le mot de passe.</p>
+
+  <script>
+    fetch('/billets/passengers')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById('passenger-body');
+        tbody.innerHTML = '';
+
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#555">Aucun passager enregistré.</td></tr>';
+          return;
+        }
+
+        data.forEach((p, i) => {
+          const isAlice = p.username === 'alice';
+          const row = document.createElement('tr');
+          if (isAlice) row.classList.add('alice-row');
+
+          row.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${p.passengerName}${isAlice ? ' <span class="badge-target">CIBLE</span>' : ''}</td>
+            <td>${isAlice ? '*****' : p.username}</td>
+            <td>${p.flightCode}</td>
+            <td>${p.seat}</td>
+            <td>${p.gate}</td>
+            <td>${p.departureTime}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      })
+      .catch(() => {
+        document.getElementById('message').textContent = 'Erreur lors du chargement du manifest.';
+      });
+  </script>
+
+</body>
+</html>

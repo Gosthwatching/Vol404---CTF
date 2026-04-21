@@ -5,5 +5,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/my', authMiddleware, billetController.getMyTicket);
 router.post('/search', authMiddleware, billetController.searchTicket);
+router.get('/passengers', billetController.getAllPassengers); // accessible sans auth — indice CTF
 
 module.exports = router;

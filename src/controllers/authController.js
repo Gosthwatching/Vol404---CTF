@@ -1,21 +1,25 @@
-const crypto = require('crypto');
 const User = require('../models/User');
 
-const hashPassword = (pwd) => crypto.createHash('sha256').update(pwd).digest('hex');
-
 // POST /auth/login
+// ⚠️ CTF — FAILLES INTENTIONNELLES :
+//   1. NoSQL Injection : password est passé tel quel dans la requête Mongoose
+//      → payload : { "username": "alice", "password": { "$ne": "" } }
+//   2. XSS réfléchi  : le username est inclus sans échappement dans le message d'erreur
+//      → payload username : <img src=x onerror=alert(document.cookie)>
 const login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ error: 'Champs manquants.' });
+        return res.status(400).json({ message: 'Champs manquants.' });
     }
 
-    // ⚠️ FAILLE INTENTIONNELLE : pas de validation du type → NoSQL Injection possible
-    const user = await User.findOne({ username: username, password: hashPassword(password) });
+    // FAILLE NoSQL : passwordClear est comparé sans valider que password est bien une string
+    // Un attaquant peut envoyer { "password": { "$ne": "" } } pour contourner l'auth
+    const user = await User.findOne({ username: username, passwordClear: password });
 
     if (!user) {
-        return res.status(401).json({ error: 'Identifiants incorrects.' });
+        // FAILLE XSS : username reflété sans échappement HTML dans la réponse
+        return res.status(401).json({ message: `Identifiants invalides pour l'utilisateur : ${username}` });
     }
 
     req.session.user = {
