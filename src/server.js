@@ -21,6 +21,17 @@ app.use(session({
     cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 } // 1h
 }));
 
+// Pages protégées — inaccessibles sans session active
+const pagesProtegees = ['/billet.html', '/gate.html', '/flag.html'];
+app.use((req, res, next) => {
+    if (pagesProtegees.includes(req.path)) {
+        if (!req.session.user) {
+            return res.redirect('/login.html');
+        }
+    }
+    next();
+});
+
 // Frontend (HTML/CSS/JS)
 app.use(express.static(path.join(__dirname, '../frontend')));
 

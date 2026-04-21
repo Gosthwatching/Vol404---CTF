@@ -52,7 +52,7 @@ const fakePassengers = [
     { username: 'lucie_h',     password: 'storm55',       name: 'Lucie Henry',        seat: '14A', gate: 'A8', time: '10:10' },
     { username: 'adam_n',      password: 'viper44',       name: 'Adam Noel',          seat: '14B', gate: 'A8', time: '10:15' },
     { username: 'jade_f',      password: 'cobra33',       name: 'Jade Faure',         seat: '14C', gate: 'A8', time: '10:20' },
-    { username: '*****',       password: '***********',   name: 'Alice Collins',      seat: '13A', gate: 'B7', time: '14:35' },
+    { username: 'alice',       password: '4ir france2026', name: 'Alice Collins',      seat: '13A', gate: 'B7', time: '14:35' },
     { username: 'robin_p',     password: 'ghost11',       name: 'Robin Perrot',       seat: '15A', gate: 'A9', time: '10:30' },
     { username: 'amelie_v',    password: 'blizzard2',     name: 'Amelie Vasseur',     seat: '15B', gate: 'A9', time: '10:35' },
     { username: 'baptiste_l',  password: 'crystal9',      name: 'Baptiste Leroy',     seat: '15C', gate: 'A9', time: '10:40' },
