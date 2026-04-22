@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CTF - Vol 404 | Billet</title>
+	<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="ticket-page">
+	<main class="ticket-screen">
+		<section class="ticket-card" aria-label="Carte d'embarquement">
+			<img class="ticket-background" src="assets/img/billet.png" alt="Carte d'embarquement Air France">
+
+			<div class="ticket-qr-slot">
+				<img id="ticket-qr" alt="QR code d'embarquement">
+			</div>
+		</section>
+
+		<p class="ticket-status" id="ticket-status">Chargement du billet...</p>
+	</main>
+
+	<script>
+		const statusNode = document.getElementById('ticket-status');
+
+		fetch('/billets/my', { credentials: 'include' })
+			.then(async (res) => {
+				if (!res.ok) {
+					throw new Error('Billet inaccessible');
+				}
+				return res.json();
+			})
+			.then((ticket) => {
+				document.getElementById('ticket-qr').src = ticket.qr;
+				statusNode.textContent = 'QR charge. Le scan vous mene vers le gate.';
+			})
+			.catch(() => {
+				statusNode.textContent = 'Impossible de charger le billet. Verifiez votre session.';
+			});
+	</script>
+</body>
+</html>

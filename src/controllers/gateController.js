@@ -6,7 +6,9 @@ const getGate = async (req, res) => {
     const { token } = req.params;
     const ticket = await Ticket.findOne({ qrToken: token });
 
-    if (!ticket) return res.status(404).sendFile('404.html');
+    if (!ticket) {
+        return res.status(404).json({ error: 'Gate introuvable ou token invalide.' });
+    }
 
     const secret = "DEPARTEMENT92";
     const encoded = vigenereEncode(secret, "ORY");

@@ -17,6 +17,20 @@ const codeContainer = document.getElementById("code-lines");
 const loader = document.getElementById("loader");
 
 let lineIndex = 0;
+let isNavigatingToLogin = false;
+
+function goToLoginWithTransition() {
+  if (isNavigatingToLogin) {
+    return;
+  }
+
+  isNavigatingToLogin = true;
+  loader.classList.add("fade-out");
+
+  setTimeout(() => {
+    window.location.href = "/login.html";
+  }, 420);
+}
 
 function typeLine(lineText, callback) {
   const lineElement = document.createElement("p");
@@ -54,12 +68,12 @@ function displayNextLine() {
     cursor.className = "blinking-cursor";
     lastLine.appendChild(cursor);
 
-    // Optionnel : rendre le loader cliquable pour passer à la suite
+    // Clic activé seulement maintenant que tout le texte est affiché
     loader.style.cursor = "pointer";
-    loader.addEventListener("click", () => {
-      window.location.href = "login.html"; // ou la page de ton choix
-    });
+    loader.addEventListener("click", goToLoginWithTransition);
   }
 }
 
-displayNextLine();
+window.addEventListener("load", () => {
+  displayNextLine();
+});

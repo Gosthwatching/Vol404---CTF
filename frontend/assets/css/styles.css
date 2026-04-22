@@ -3,6 +3,7 @@
 ▄▄ ▄▄  ▄▄ ▄▄▄▄  ▄▄▄▄▄ ▄▄ ▄▄   ▄▄ ▄▄ ▄▄▄▄▄▄ ▄▄   ▄▄ ▄▄    
 ██ ███▄██ ██▀██ ██▄▄  ▀█▄█▀   ██▄██   ██   ██▀▄▀██ ██    
 ██ ██ ▀██ ████▀ ██▄▄▄ ██ ██ ▄ ██ ██   ██   ██   ██ ██▄▄▄ 
+
                                                          
 */
 
@@ -105,6 +106,19 @@ body.login-page {
     background-position: center;
     background-repeat: no-repeat;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  body.login-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 1;
+    transition: opacity 0.45s ease;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .login-wrapper {
@@ -118,6 +132,20 @@ body.login-page {
     max-width: 400px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     color: #fff;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  body.login-page.page-ready::before {
+    opacity: 0;
+  }
+
+  body.login-page.page-ready .login-wrapper {
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 .login-wrapper .airline-logo {
@@ -209,3 +237,326 @@ body.login-page {
     color: rgba(255, 255, 255, 0.35);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  body.login-page::before,
+  .login-wrapper {
+    transition: none;
+  }
+
+  body.login-page::before {
+    opacity: 0;
+  }
+
+  .login-wrapper {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/*                                                  
+▄▄ ▄▄  ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄   ▄▄ ▄▄ ▄▄▄▄▄▄ ▄▄   ▄▄ ▄▄    
+██▄██ ██▀██ ██▀▄▀██ ██▄▄    ██▄██   ██   ██▀▄▀██ ██    
+██ ██ ▀███▀ ██   ██ ██▄▄▄ ▄ ██ ██   ██   ██   ██ ██▄▄▄ 
+
+*/
+
+.menu {
+    display: flex;
+    justify-content: center;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    padding: 12px 32px;
+}
+
+.menu ul {
+    display: flex;
+    flex-direction: row;
+    gap: 32px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu ul li a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+.menu ul li a:hover {
+    color: #fff;
+}
+
+body.home-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-image: url('../img/aeroport-bordeaux.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #fff;
+    overflow-x: hidden;
+}
+
+/* Header fixe */
+body.home-page header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dans le header, le menu n'a plus besoin de son propre fond ni positionnement */
+body.home-page .menu {
+    position: static;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    padding: 0;
+    width: auto;
+}
+
+.home-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.home-wrapper h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+}
+
+/* Sections de contenu */
+.home-section {
+    max-width: 800px;
+    width: 90%;
+    margin: 32px auto 0;
+    padding: 40px 40px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.home-section:first-of-type {
+    margin-top: 110px;
+}
+
+.home-section:last-of-type {
+    margin-bottom: 64px;
+}
+
+.home-section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+}
+
+.home-section p {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+body.ticket-page {
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #041739 0%, #0e2d66 55%, #183f7a 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+  padding: 24px;
+}
+
+.ticket-screen {
+  width: min(100%, 900px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.ticket-card {
+  position: relative;
+  width: min(100%, 900px);
+  aspect-ratio: 1536 / 998;
+}
+
+.ticket-background {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  border-radius: 28px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.28);
+}
+
+.ticket-field {
+  position: absolute;
+  color: #0e2761;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.ticket-passenger-main {
+  top: 19.8%;
+  left: 4.1%;
+  font-size: clamp(22px, 2.8vw, 54px);
+}
+
+.ticket-date {
+  top: 20.6%;
+  left: 45.8%;
+  font-size: clamp(12px, 1.45vw, 28px);
+}
+
+.ticket-class {
+  top: 20.6%;
+  left: 59.4%;
+  font-size: clamp(12px, 1.45vw, 28px);
+}
+
+.ticket-flight-main {
+  top: 46.2%;
+  left: 5.4%;
+  font-size: clamp(26px, 4.2vw, 66px);
+}
+
+.ticket-seat-main {
+  top: 46.2%;
+  left: 27.2%;
+  font-size: clamp(26px, 4.2vw, 66px);
+}
+
+.ticket-gate-main {
+  top: 46.2%;
+  left: 44.2%;
+  font-size: clamp(26px, 4.2vw, 66px);
+}
+
+.ticket-time-main {
+  top: 46.2%;
+  left: 58.6%;
+  font-size: clamp(26px, 4.2vw, 66px);
+}
+
+.ticket-from-code {
+  top: 67.8%;
+  left: 4.2%;
+  font-size: clamp(15px, 1.75vw, 34px);
+}
+
+.ticket-from-airport {
+  top: 72.2%;
+  left: 4.2%;
+  font-size: clamp(9px, 1.15vw, 22px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.ticket-to-code {
+  top: 67.8%;
+  left: 45.8%;
+  font-size: clamp(15px, 1.75vw, 34px);
+}
+
+.ticket-to-airport {
+  top: 72.2%;
+  left: 45.8%;
+  font-size: clamp(9px, 1.15vw, 22px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.ticket-passenger-side {
+  top: 18.5%;
+  left: 74.3%;
+  font-size: clamp(17px, 2.2vw, 42px);
+}
+
+.ticket-flight-side {
+  top: 39.2%;
+  left: 74.3%;
+  font-size: clamp(19px, 2.7vw, 50px);
+}
+
+.ticket-seat-side {
+  top: 53.7%;
+  left: 74.3%;
+  font-size: clamp(19px, 2.45vw, 46px);
+}
+
+.ticket-gate-side {
+  top: 53.7%;
+  left: 90%;
+  font-size: clamp(19px, 2.45vw, 46px);
+  transform: translateX(-100%);
+}
+
+.ticket-time-side {
+  top: 66.8%;
+  left: 74.3%;
+  font-size: clamp(19px, 2.45vw, 46px);
+}
+
+.ticket-qr-slot {
+  position: absolute;
+  left: 76%;
+  top: 67%;
+  width: 17%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-qr-slot img {
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+
+.ticket-status {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  body.ticket-page {
+    padding: 12px;
+  }
+
+  .ticket-screen {
+    gap: 12px;
+  }
+}

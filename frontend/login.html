@@ -14,7 +14,7 @@
 
         <form id="login-form">
             <label for="username">Identifiant</label>
-            <input type="text" id="username" name="username" placeholder="ex : alice" autocomplete="username" required>
+            <input type="text" id="username" name="username" placeholder="ex : Tyler" autocomplete="username" required>
 
             <label for="password">Mot de passe</label>
             <input type="password" id="password" name="password" placeholder="••••••••••••" autocomplete="current-password" required>
@@ -23,10 +23,18 @@
         </form>
 
         <p id="error-message"></p>
-        <p class="footer-note">AF404 · Orly · Départ 14h35</p>
+        <p class="footer-note">AF404 · Départ 14h35</p>
     </div>
 
     <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    document.body.classList.add('page-ready');
+                });
+            });
+        });
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
@@ -42,7 +50,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    window.location.href = 'billet.html';
+                    window.location.href = '/home.html';
                 } else {
                     // ⚠️ CTF — innerHTML intentionnel : XSS réfléchi possible via le message serveur
                     errorMsg.innerHTML = data.message || 'Identifiants incorrects.';

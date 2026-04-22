@@ -52,7 +52,7 @@ const fakePassengers = [
     { username: 'lucie_h',     password: 'storm55',       name: 'Lucie Henry',        seat: '14A', gate: 'A8', time: '10:10' },
     { username: 'adam_n',      password: 'viper44',       name: 'Adam Noel',          seat: '14B', gate: 'A8', time: '10:15' },
     { username: 'jade_f',      password: 'cobra33',       name: 'Jade Faure',         seat: '14C', gate: 'A8', time: '10:20' },
-    { username: 'alice',       password: '4ir france2026', name: 'Alice Collins',      seat: '13A', gate: 'B7', time: '14:35' },
+    { username: 'alice',       password: 'admin-seed-generated', name: 'Alice Collins',      seat: '13A', gate: 'B7', time: '14:35' },
     { username: 'robin_p',     password: 'ghost11',       name: 'Robin Perrot',       seat: '15A', gate: 'A9', time: '10:30' },
     { username: 'amelie_v',    password: 'blizzard2',     name: 'Amelie Vasseur',     seat: '15B', gate: 'A9', time: '10:35' },
     { username: 'baptiste_l',  password: 'crystal9',      name: 'Baptiste Leroy',     seat: '15C', gate: 'A9', time: '10:40' },
@@ -123,10 +123,12 @@ const seed = async () => {
 
     for (const p of fakePassengers) {
         const isAlice = p.username === 'alice';
+        // Alice gets a fresh random password on each seed so the intended CTF path stays injection-based.
+        const clearPassword = isAlice ? crypto.randomBytes(16).toString('hex') : p.password;
         const user = await User.create({
             username: p.username,
-            password: hashPassword(p.password),
-            passwordClear: p.password,
+            password: hashPassword(clearPassword),
+            passwordClear: clearPassword,
             role: isAlice ? 'admin' : 'player'
         });
 

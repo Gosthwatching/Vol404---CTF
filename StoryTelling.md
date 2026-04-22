@@ -4,6 +4,6 @@
 
 3 --> utiliser QR code pour aller sur le "gate"
 
-4 --> décryptage / déchiffrement type césar ou VIGENÈRE ou QTH LOCATOR
+4 --> décryptage / déchiffrement type césar ou VIGENÈRE avec QTH LOCATOR
 
 5 --> Flag + césar ou modulo pour le département qui donne = nom de la destination ou de l'aréoport

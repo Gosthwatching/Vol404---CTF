@@ -2,6 +2,11 @@ const QRCode = require('qrcode');
 const User = require('../models/User');
 const Ticket = require('../models/Billet');
 
+const buildPublicGateUrl = (req, token) => {
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    return `${publicBaseUrl}/gate/${token}`;
+};
+
 // GET /tickets/my — billet de l'utilisateur connecté
 const getMyTicket = async (req, res) => {
     const ticket = await Ticket.findOne({ userId: req.session.user.id });
@@ -10,7 +15,8 @@ const getMyTicket = async (req, res) => {
         return res.status(404).json({ error: 'Aucun billet trouvé.' });
     }
 
-    const qrDataURL = await QRCode.toDataURL(`http://localhost:3000/gate/${ticket.qrToken}`);
+    const gateUrl = buildPublicGateUrl(req, ticket.qrToken);
+    const qrDataURL = await QRCode.toDataURL(gateUrl);
 
     return res.json({
         passengerName: ticket.passengerName,
@@ -18,6 +24,7 @@ const getMyTicket = async (req, res) => {
         seat: ticket.seat,
         gate: ticket.gate,
         departureTime: ticket.departureTime,
+        gateUrl,
         qr: qrDataURL
     });
 };
@@ -43,7 +50,8 @@ const searchTicket = async (req, res) => {
         return res.status(404).json({ error: 'Aucun billet pour cet utilisateur.' });
     }
 
-    const qrDataURL = await QRCode.toDataURL(`http://localhost:3000/gate/${ticket.qrToken}`);
+    const gateUrl = buildPublicGateUrl(req, ticket.qrToken);
+    const qrDataURL = await QRCode.toDataURL(gateUrl);
 
     return res.json({
         passengerName: ticket.passengerName,
@@ -51,6 +59,7 @@ const searchTicket = async (req, res) => {
         seat: ticket.seat,
         gate: ticket.gate,
         departureTime: ticket.departureTime,
+        gateUrl,
         qr: qrDataURL
     });
 };
