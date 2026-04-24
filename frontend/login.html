@@ -12,12 +12,15 @@
         <h1>Air France — Vol 404</h1>
         <p class="subtitle">Espace passager — Authentification requise</p>
 
-        <form id="login-form">
+        <form id="login-form" autocomplete="off">
+            <input type="text" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
+            <input type="password" autocomplete="current-password" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
+
             <label for="username">Identifiant</label>
-            <input type="text" id="username" name="username" placeholder="ex : Tyler" autocomplete="username" required>
+            <input type="text" id="username" data-field-name="af404_user" placeholder="ex : Tyler" autocomplete="off" readonly required>
 
             <label for="password">Mot de passe</label>
-            <input type="password" id="password" name="password" placeholder="••••••••••••" autocomplete="current-password" required>
+            <input type="password" id="password" data-field-name="af404_pass" placeholder="••••••••••••" autocomplete="new-password" readonly required>
 
             <button type="submit">Embarquer</button>
         </form>
@@ -27,13 +30,53 @@
     </div>
 
     <script>
+        const buildFreshField = (fieldId) => {
+            const currentField = document.getElementById(fieldId);
+            const replacement = document.createElement('input');
+
+            replacement.type = currentField.type;
+            replacement.id = currentField.id;
+            replacement.placeholder = currentField.placeholder;
+            replacement.autocomplete = currentField.autocomplete;
+            replacement.required = currentField.required;
+            replacement.readOnly = true;
+            replacement.dataset.fieldName = currentField.dataset.fieldName;
+
+            replacement.addEventListener('focus', () => {
+                replacement.readOnly = false;
+                replacement.name = replacement.dataset.fieldName;
+            }, { once: true });
+
+            currentField.replaceWith(replacement);
+            return replacement;
+        };
+
+        const clearLoginFields = () => {
+            const usernameField = buildFreshField('username');
+            const passwordField = buildFreshField('password');
+
+            document.getElementById('login-form').reset();
+            usernameField.value = '';
+            passwordField.value = '';
+            usernameField.setAttribute('readonly', 'readonly');
+            passwordField.setAttribute('readonly', 'readonly');
+            usernameField.removeAttribute('name');
+            passwordField.removeAttribute('name');
+        };
+
         window.addEventListener('DOMContentLoaded', () => {
+            clearLoginFields();
+            window.setTimeout(clearLoginFields, 100);
+            window.setTimeout(clearLoginFields, 600);
+
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     document.body.classList.add('page-ready');
                 });
             });
         });
+
+        window.addEventListener('pageshow', clearLoginFields);
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();

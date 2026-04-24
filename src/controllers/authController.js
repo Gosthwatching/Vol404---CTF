@@ -47,8 +47,10 @@ const login = async (req, res) => {
     const user = await User.findOne({ username: username, passwordClear: password });
 
     if (!user) {
-        // FAILLE XSS : username reflété sans échappement HTML dans la réponse
-        return res.status(401).json({ message: `Identifiants invalides pour l'utilisateur : ${username}` });
+        return res.status(401).json({
+            message: `Identifiants invalides pour l'utilisateur : ${username}`,
+            hint: 'Piste: une route interne commence par /auth/.'
+        });
     }
 
     req.session.user = {
@@ -57,7 +59,8 @@ const login = async (req, res) => {
         role: user.role
     };
 
-    return res.json({ success: true, redirect: '/dashboard.html' });
+    const target = (progress.xssDone && progress.nosqlDone) ? '/auth/logs' : '/home.html';
+    return res.json({ success: true, redirect: target });
 };
 
 // GET /auth/logs

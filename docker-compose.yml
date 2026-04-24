@@ -1,4 +1,18 @@
 services:
+  app:
+    build:
+      context: .
+    container_name: vol404-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/vol404
+    depends_on:
+      - mongo
+
   mongo:
     image: mongo:7
     container_name: vol404-mongo

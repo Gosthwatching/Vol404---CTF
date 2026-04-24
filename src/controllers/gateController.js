@@ -10,7 +10,7 @@ const getGate = async (req, res) => {
         return res.status(404).json({ error: 'Gate introuvable ou token invalide.' });
     }
 
-    const secret = "DEPARTEMENT92";
+    const secret = "DEPARTEMENT94";
     const encoded = vigenereEncode(secret, "ORY");
 
     return res.json({

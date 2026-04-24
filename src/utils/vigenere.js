@@ -1,6 +1,6 @@
 /**
  * Chiffrement de Vigenère
- * @param {string} key  - La clé de chiffrement (ex: "DEPARTEMENT92")
+ * @param {string} key  - La clé de chiffrement (ex: "DEPARTEMENT94")
  * @param {string} text - Le texte à chiffrer (ex: "ORY")
  * @returns {string}    - Le texte chiffré
  */

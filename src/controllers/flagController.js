@@ -1,5 +1,5 @@
 const airports = {
-    92: "ORY",   // Hauts-de-Seine → Paris-Orly
+    94: "ORY",   // Val-de-Marne → Paris-Orly
     13: "MRS",   // Marseille
     69: "LYS",   // Lyon
     75: "CDG",   // Paris CDG
