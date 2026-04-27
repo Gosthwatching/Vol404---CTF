@@ -1,10 +1,11 @@
 const QRCode = require('qrcode');
 const User = require('../models/User');
 const Ticket = require('../models/Billet');
+const { createScanSession, getScanSession } = require('../utils/scanSessions');
 
-const buildPublicGateUrl = (req, token) => {
+const buildPublicScanUrl = (req, scanId) => {
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    return `${publicBaseUrl}/gate/${token}`;
+    return `${publicBaseUrl}/gate/scan/${scanId}`;
 };
 
 // GET /tickets/my — billet de l'utilisateur connecté
@@ -15,8 +16,13 @@ const getMyTicket = async (req, res) => {
         return res.status(404).json({ error: 'Aucun billet trouvé.' });
     }
 
-    const gateUrl = buildPublicGateUrl(req, ticket.qrToken);
-    const qrDataURL = await QRCode.toDataURL(gateUrl);
+    const scanId = createScanSession({
+        ticketToken: ticket.qrToken,
+        userId: String(req.session.user.id)
+    });
+
+    const scanUrl = buildPublicScanUrl(req, scanId);
+    const qrDataURL = await QRCode.toDataURL(scanUrl);
 
     return res.json({
         passengerName: ticket.passengerName,
@@ -24,7 +30,7 @@ const getMyTicket = async (req, res) => {
         seat: ticket.seat,
         gate: ticket.gate,
         departureTime: ticket.departureTime,
-        gateUrl,
+        scanId,
         qr: qrDataURL
     });
 };
@@ -50,8 +56,13 @@ const searchTicket = async (req, res) => {
         return res.status(404).json({ error: 'Aucun billet pour cet utilisateur.' });
     }
 
-    const gateUrl = buildPublicGateUrl(req, ticket.qrToken);
-    const qrDataURL = await QRCode.toDataURL(gateUrl);
+    const scanId = createScanSession({
+        ticketToken: ticket.qrToken,
+        userId: String(req.session.user.id)
+    });
+
+    const scanUrl = buildPublicScanUrl(req, scanId);
+    const qrDataURL = await QRCode.toDataURL(scanUrl);
 
     return res.json({
         passengerName: ticket.passengerName,
@@ -59,8 +70,27 @@ const searchTicket = async (req, res) => {
         seat: ticket.seat,
         gate: ticket.gate,
         departureTime: ticket.departureTime,
-        gateUrl,
+        scanId,
         qr: qrDataURL
+    });
+};
+
+// GET /billets/scan-status/:scanId — polling côté PC pour vérifier le scan QR
+const getScanStatus = async (req, res) => {
+    const { scanId } = req.params;
+    const session = getScanSession(scanId);
+
+    if (!session || session.userId !== String(req.session.user.id)) {
+        return res.status(404).json({ error: 'Session de scan introuvable.' });
+    }
+
+    if (!session.scanned) {
+        return res.json({ scanned: false });
+    }
+
+    return res.json({
+        scanned: true,
+        redirect: `/gate/scan-result/${scanId}`
     });
 };
 
@@ -80,4 +110,4 @@ const getAllPassengers = async (req, res) => {
     return res.json(list);
 };
 
-module.exports = { getMyTicket, searchTicket, getAllPassengers };
+module.exports = { getMyTicket, searchTicket, getScanStatus, getAllPassengers };

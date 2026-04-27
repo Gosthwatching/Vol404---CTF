@@ -21,6 +21,42 @@
 
 	<script>
 		const statusNode = document.getElementById('ticket-status');
+		let pollHandle = null;
+
+		const stopPolling = () => {
+			if (pollHandle) {
+				clearInterval(pollHandle);
+				pollHandle = null;
+			}
+		};
+
+		const watchScanStatus = (scanId) => {
+			const checkStatus = () => {
+				fetch(`/billets/scan-status/${encodeURIComponent(scanId)}`, { credentials: 'include' })
+					.then(async (res) => {
+						if (!res.ok) {
+							throw new Error('Scan status indisponible');
+						}
+						return res.json();
+					})
+					.then((payload) => {
+						if (!payload.scanned) {
+							return;
+						}
+
+						stopPolling();
+						statusNode.textContent = 'QR valide. Redirection vers le gate...';
+						window.location.href = payload.redirect;
+					})
+					.catch(() => {
+						statusNode.textContent = 'Erreur de verification du scan QR. Recharge le billet.';
+						stopPolling();
+					});
+			};
+
+			checkStatus();
+			pollHandle = setInterval(checkStatus, 1500);
+		};
 
 		fetch('/billets/my', { credentials: 'include' })
 			.then(async (res) => {
@@ -31,10 +67,12 @@
 			})
 			.then((ticket) => {
 				document.getElementById('ticket-qr').src = ticket.qr;
-				statusNode.textContent = 'QR charge. Le scan vous mene vers le gate.';
+				statusNode.textContent = 'Billet charge. Scanne le QR avec ton telephone pour ouvrir le gate ici.';
+				watchScanStatus(ticket.scanId);
 			})
 			.catch(() => {
 				statusNode.textContent = 'Impossible de charger le billet. Verifiez votre session.';
+				stopPolling();
 			});
 	</script>
 </body>

