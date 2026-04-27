@@ -2,8 +2,9 @@
 node_modules/
 
 # Environment variables and secrets
-.env
+# .env est versionne intentionnellement (aucune donnee sensible pour ce CTF)
 .env.*
+!.env
 !.env.example
 
 # Logs
