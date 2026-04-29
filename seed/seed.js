@@ -54,6 +54,14 @@ const specialProfiles = {
         specialTags: ['PRIO', 'VIP', 'SECURITY'],
         manifestNotes: 'Briefing surete requis avant embarquement.'
     },
+    xavier_p: {
+        specialTags: ['SECURITY'],
+        manifestNotes: 'Verification documentaire secondaire demandee en porte.'
+    },
+    stephane_m: {
+        specialTags: ['PRIO', 'SECURITY'],
+        manifestNotes: 'Controle surete manuel demande avant embarquement.'
+    },
     Zorrow: {
         specialTags: ['WCHR'],
         manifestNotes: 'Assistance mobilite jusqu a la porte d embarquement.'
@@ -82,12 +90,33 @@ const specialProfiles = {
     }
 };
 
+const buildAutoTravelerTags = (index) => {
+    const tags = [];
+
+    if (index % 9 === 0) tags.push('PRIO');
+    if (index % 14 === 0) tags.push('VGML');
+    if (index % 19 === 0) tags.push('PETC');
+
+    return tags;
+};
+
+const buildAutoTravelerNote = (tags) => {
+    if (!tags.length) return '';
+
+    if (tags.includes('PETC')) return 'Bagage cabine adapte transport animal confirme.';
+    if (tags.includes('VGML')) return 'Repas special confirme au catering.';
+    if (tags.includes('PRIO')) return 'Priorite embarquement active au dossier.';
+
+    return '';
+};
+
 const buildManifestDetails = (passenger, index) => {
     const baseSeat = buildSeatNumber(index);
     const override = specialProfiles[passenger.username];
     const seat = override?.seat || baseSeat;
     const cabinClass = override?.cabinClass || getCabinClassFromSeat(seat);
     const baggage = cabinClass === 'Business' ? '2PC HOLD + CABIN' : cabinClass === 'Premium Economy' ? '1PC HOLD + CABIN' : index % 4 === 0 ? 'CABIN ONLY' : '1PC HOLD + CABIN';
+    const autoTags = buildAutoTravelerTags(index);
     const profile = {
         seat,
         gate: flightConfig.gate,
@@ -97,22 +126,23 @@ const buildManifestDetails = (passenger, index) => {
         cabinClass,
         bookingRef: buildBookingRef(index),
         baggage,
-        specialTags: [],
-        manifestNotes: ''
+        specialTags: autoTags,
+        manifestNotes: buildAutoTravelerNote(autoTags)
     };
 
     if (override) {
+        const mergedTags = [...new Set([...(profile.specialTags || []), ...(override.specialTags || [])])];
         return {
             ...profile,
             ...override,
-            specialTags: override.specialTags ? [...override.specialTags] : profile.specialTags
+            specialTags: mergedTags
         };
     }
 
     return profile;
 };
 
-// 100 passagers — alice cachée en position 42
+// 100 passagers
 const fakePassengers = [
     { username: 'marco_v',     password: 'summer2024',    name: 'Marco Ventura',      seat: '1A',  gate: 'A1', time: '07:00' },
     { username: 'lena_k',      password: 'hello123',      name: 'Lena Kowalski',      seat: '1B',  gate: 'A1', time: '07:05' },
@@ -215,6 +245,19 @@ const fakePassengers = [
     { username: 'francois_b',  password: 'lima22',        name: 'Francois Baudry',    seat: '33C', gate: 'C2', time: '15:15' },
 ];
 
+const orderedPassengers = (() => {
+    const list = [...fakePassengers];
+    const aliceIndex = list.findIndex((passenger) => passenger.username === 'alice');
+
+    if (aliceIndex === -1) {
+        return list;
+    }
+
+    const [alicePassenger] = list.splice(aliceIndex, 1);
+    list.push(alicePassenger);
+    return list;
+})();
+
 const seed = async () => {
     if (!MONGO_URI) {
         throw new Error('MONGO_URI manquant. Verifie le fichier .env a la racine du projet.');
@@ -246,7 +289,7 @@ const seed = async () => {
     await Ticket.deleteMany({});
     console.log('Collections vidées');
 
-    for (const [index, p] of fakePassengers.entries()) {
+    for (const [index, p] of orderedPassengers.entries()) {
         const isAlice = p.username === 'alice';
         const manifestDetails = buildManifestDetails(p, index);
         // Alice gets a fresh random password on each seed so the intended CTF path stays injection-based.
@@ -284,7 +327,7 @@ const seed = async () => {
         }
     }
 
-    console.log(`${fakePassengers.length} passagers créés.`);
+    console.log(`${orderedPassengers.length} passagers créés.`);
     await mongoose.disconnect();
     console.log('Seed terminé.');
 };

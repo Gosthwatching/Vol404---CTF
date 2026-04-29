@@ -672,28 +672,6 @@ body.passengers-page {
   line-height: 1.2;
 }
 
-tr.alice-row td {
-  background: #2a1214;
-}
-
-tr.alice-row:hover td {
-  background: #3a1619;
-}
-
-.badge-target {
-  display: inline-flex;
-  align-items: center;
-  background: #d94b4b;
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  line-height: 1;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-
 .tag-list {
   display: flex;
   flex-wrap: wrap;
