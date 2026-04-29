@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manifest Vol AF404</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="passengers-page">
+  <div class="shell">
+    <section class="flight-card">
+      <h1>Manifest passagers AF404</h1>
+      <p class="subtitle">Liste simplifiee d embarquement avec places, horaire, porte et avion affecte.</p>
+      <div class="flight-info" id="flight-info">
+        <span>Chargement des informations vol...</span>
+      </div>
+    </section>
+
+    <section class="table-wrap">
+      <div class="table-scroll">
+        <table id="passenger-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Passager</th>
+              <th>Dossier</th>
+              <th>Siege</th>
+              <th>Cabine</th>
+              <th>Porte</th>
+              <th>STD</th>
+              <th>Avion</th>
+              <th>Options</th>
+            </tr>
+          </thead>
+          <tbody id="passenger-body">
+            <tr><td colspan="9" class="manifest-empty-state">Chargement du manifest...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p id="message"></p>
+    <p class="hint">Indice : une faille sur la page de connexion permet de s'authentifier sans connaitre le mot de passe.</p>
+
+    <footer class="app-footer">
+      <p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
+    </footer>
+  </div>
+
+  <script>
+    const tagLabels = {
+      PRIO: 'Prioritaire',
+      VIP: 'VIP',
+      SECURITY: 'Surete',
+      WCHR: 'Assistance PMR',
+      MEDA: 'Medical',
+      VGML: 'Repas VGML',
+      PETC: 'Animal cabine',
+      UM: 'Mineur non accompagne',
+      EXST: 'Siege additionnel'
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const renderTags = (tags, isAlice) => {
+      const safeTags = Array.isArray(tags) ? tags : [];
+      const rendered = safeTags.map((tag) => {
+        const isAlert = tag === 'SECURITY';
+        return `<span class="tag-pill${isAlert ? ' alert' : ''}">${escapeHtml(tagLabels[tag] || tag)}</span>`;
+      });
+
+      if (isAlice) {
+        rendered.push('<span class="tag-pill alert">Controle prioritaire</span>');
+      }
+
+      return rendered.length ? rendered.join('') : '<span class="row-sub">Aucun tag</span>';
+    };
+
+    const updateFlightInfo = (firstPassenger, count) => {
+      const flightInfo = document.getElementById('flight-info');
+
+      if (!firstPassenger) {
+        flightInfo.innerHTML = '<span>Aucune information disponible.</span>';
+        return;
+      }
+
+      flightInfo.innerHTML = `
+        <span><strong>Vol:</strong> ${escapeHtml(firstPassenger.flightCode)}</span>
+        <span><strong>Pax:</strong> ${count}</span>
+        <span><strong>Porte:</strong> ${escapeHtml(firstPassenger.gate)}</span>
+        <span><strong>STD:</strong> ${escapeHtml(firstPassenger.departureTime)}</span>
+        <span><strong>Avion:</strong> ${escapeHtml(firstPassenger.aircraftType || 'N/A')}</span>
+        <span><strong>Immat.:</strong> ${escapeHtml(firstPassenger.aircraftRegistration || 'N/A')}</span>
+      `;
+    };
+
+    fetch('/billets/passengers')
+      .then((res) => res.json())
+      .then((data) => {
+        const tbody = document.getElementById('passenger-body');
+        tbody.innerHTML = '';
+
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="9" class="manifest-empty-state">Aucun passager enregistre.</td></tr>';
+          updateFlightInfo(null, 0);
+          return;
+        }
+
+        updateFlightInfo(data[0], data.length);
+
+        data.forEach((passenger, index) => {
+          const isAlice = passenger.username === 'alice';
+          const row = document.createElement('tr');
+          row.classList.add('passenger-row');
+          if (isAlice) row.classList.add('alice-row');
+
+          row.innerHTML = `
+            <td class="mono" data-label="#">${index + 1}</td>
+            <td data-label="Passager">
+              <div class="passenger-head">
+                <strong>${escapeHtml(passenger.passengerName)}</strong>
+                ${isAlice ? '<span class="badge-target">Alerte securite</span>' : ''}
+              </div>
+              <div class="row-sub">${isAlice ? 'profil sensible' : 'embarquement standard'}</div>
+            </td>
+            <td class="mono" data-label="Dossier">${escapeHtml(passenger.bookingRef || 'N/A')}</td>
+            <td class="mono" data-label="Siege">${escapeHtml(passenger.seat)}</td>
+            <td data-label="Cabine">${escapeHtml(passenger.cabinClass || 'Economy')}</td>
+            <td class="mono" data-label="Porte">${escapeHtml(passenger.gate)}</td>
+            <td class="mono" data-label="STD">${escapeHtml(passenger.departureTime)}</td>
+            <td data-label="Avion">
+              <div>${escapeHtml(passenger.aircraftType || 'N/A')}</div>
+              <div class="row-sub">${escapeHtml(passenger.aircraftRegistration || '')}</div>
+            </td>
+            <td data-label="Options">
+              <div class="tag-list">${renderTags(passenger.specialTags, isAlice)}</div>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      })
+      .catch(() => {
+        document.getElementById('message').textContent = 'Erreur lors du chargement du manifest.';
+      });
+  </script>
+</body>
+</html>

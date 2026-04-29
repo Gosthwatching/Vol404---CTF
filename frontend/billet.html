@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CTF - Vol 404 | Billet</title>
+	<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="ticket-page">
+	<main class="ticket-screen">
+		<section class="ticket-card" aria-label="Carte d'embarquement">
+			<img class="ticket-background" src="assets/img/billet.png" alt="Carte d'embarquement Air France">
+
+			<div class="ticket-qr-slot">
+				<img id="ticket-qr" alt="QR code d'embarquement">
+			</div>
+		</section>
+
+		<p class="ticket-status" id="ticket-status">Chargement du billet...</p>
+	</main>
+
+	<script>
+		const statusNode = document.getElementById('ticket-status');
+		let pollHandle = null;
+
+		const stopPolling = () => {
+			if (pollHandle) {
+				clearInterval(pollHandle);
+				pollHandle = null;
+			}
+		};
+
+		const watchScanStatus = (scanId) => {
+			const checkStatus = () => {
+				fetch(`/billets/scan-status/${encodeURIComponent(scanId)}`, { credentials: 'include' })
+					.then(async (res) => {
+						if (!res.ok) {
+							throw new Error('Scan status indisponible');
+						}
+						return res.json();
+					})
+					.then((payload) => {
+						if (!payload.scanned) {
+							return;
+						}
+
+						stopPolling();
+						statusNode.textContent = 'QR valide. Redirection vers le gate...';
+						window.location.href = payload.redirect;
+					})
+					.catch(() => {
+						statusNode.textContent = 'Erreur de verification du scan QR. Recharge le billet.';
+						stopPolling();
+					});
+			};
+
+			checkStatus();
+			pollHandle = setInterval(checkStatus, 1500);
+		};
+
+		fetch('/billets/my', { credentials: 'include' })
+			.then(async (res) => {
+				if (!res.ok) {
+					throw new Error('Billet inaccessible');
+				}
+				return res.json();
+			})
+			.then((ticket) => {
+				document.getElementById('ticket-qr').src = ticket.qr;
+				statusNode.textContent = 'Billet charge. Scanne le QR avec ton telephone pour ouvrir le gate ici.';
+				watchScanStatus(ticket.scanId);
+			})
+			.catch(() => {
+				statusNode.textContent = 'Impossible de charger le billet. Verifiez votre session.';
+				stopPolling();
+			});
+	</script>
+    <footer class="app-footer">
+        <p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
+    </footer>
+</body>
+</html>
