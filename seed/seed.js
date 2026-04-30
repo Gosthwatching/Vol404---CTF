@@ -48,7 +48,7 @@ const getCabinClassFromSeat = (seat) => {
 
 const specialProfiles = {
     alice: {
-        seat: '7C',
+        seat: '17C',
         cabinClass: 'Premium Economy',
         baggage: '2PC HOLD + CABIN',
         specialTags: ['PRIO', 'VIP', 'SECURITY'],
