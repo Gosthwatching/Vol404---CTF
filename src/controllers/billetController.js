@@ -1,15 +1,92 @@
 const QRCode = require('qrcode');
+const os = require('os');
 const User = require('../models/User');
 const Ticket = require('../models/Billet');
 const { createScanSession, getScanSession } = require('../utils/scanSessions');
+
+const getPreferredLanIp = () => {
+    const interfaces = os.networkInterfaces();
+    const all = Object.entries(interfaces).flatMap(([name, nets]) =>
+        (nets || []).map((net) => ({ name, ...net }))
+    );
+
+    const isPrivateIpv4 = (ip) =>
+        ip.startsWith('192.168.') || ip.startsWith('10.') || /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip);
+
+    const usable = all.filter((net) =>
+        net.family === 'IPv4' &&
+        !net.internal &&
+        typeof net.address === 'string' &&
+        isPrivateIpv4(net.address)
+    );
+
+    const scoreInterface = (name = '') => {
+        const n = name.toLowerCase();
+        let score = 0;
+
+        if (/wi-?fi|wlan/.test(n)) score += 50;
+        if (/ethernet|eth/.test(n)) score += 30;
+
+        // Exclure les interfaces virtuelles / VPN quand c'est possible.
+        if (/vethernet|hyper-v|virtual|vmware|docker|wsl|nord|vpn|loopback|tunnel/.test(n)) score -= 80;
+
+        return score;
+    };
+
+    const ranked = usable
+        .map((net) => ({ ...net, score: scoreInterface(net.name) }))
+        .sort((a, b) => b.score - a.score);
+
+    return ranked[0]?.address || usable[0]?.address || null;
+};
 
 const buildPublicScanUrl = (req, scanId) => {
     const forwardedProto = req.get('x-forwarded-proto');
     const forwardedHost = req.get('x-forwarded-host');
     const requestProto = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
     const requestHost = forwardedHost ? forwardedHost.split(',')[0].trim() : req.get('host');
-    const publicBaseUrl = process.env.PUBLIC_BASE_URL || `${requestProto}://${requestHost}`;
+    const isDockerRuntime = process.env.DOCKER === 'true' || require('fs').existsSync('/.dockerenv');
+
+    if (process.env.PUBLIC_BASE_URL) {
+        return `${process.env.PUBLIC_BASE_URL}/gate/scan/${scanId}`;
+    }
+
+    let effectiveHost = requestHost;
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestHost || '')) {
+        // En conteneur Docker, l'IP détectée depuis les interfaces est souvent celle du bridge
+        // (ex: 172.x) et n'est pas joignable depuis le téléphone.
+        if (isDockerRuntime) {
+            return `${requestProto}://${requestHost}/gate/scan/${scanId}`;
+        }
+
+        const lanIp = getPreferredLanIp();
+        if (lanIp) {
+            const portMatch = requestHost.match(/:(\d+)$/);
+            const port = portMatch ? `:${portMatch[1]}` : '';
+            effectiveHost = `${lanIp}${port}`;
+        }
+    }
+
+    const publicBaseUrl = `${requestProto}://${effectiveHost}`;
     return `${publicBaseUrl}/gate/scan/${scanId}`;
+};
+
+const buildScanUrls = (req, scanId) => {
+    const forwardedProto = req.get('x-forwarded-proto');
+    const requestProto = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
+    const host = req.get('host') || 'localhost:3000';
+    const portMatch = host.match(/:(\d+)$/);
+    const port = portMatch ? portMatch[1] : '3000';
+
+    const scanUrlLocal = `http://localhost:${port}/gate/scan/${scanId}`;
+    const publicCandidate = buildPublicScanUrl(req, scanId);
+    const isLocalOnly = /:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(publicCandidate);
+
+    return {
+        scanUrlLocal,
+        scanUrlPublic: isLocalOnly ? null : publicCandidate,
+        scanUrl: isLocalOnly ? scanUrlLocal : publicCandidate
+    };
 };
 
 // GET /tickets/my — billet de l'utilisateur connecté
@@ -25,7 +102,7 @@ const getMyTicket = async (req, res) => {
         userId: String(req.session.user.id)
     });
 
-    const scanUrl = buildPublicScanUrl(req, scanId);
+    const { scanUrl, scanUrlLocal, scanUrlPublic } = buildScanUrls(req, scanId);
     const qrDataURL = await QRCode.toDataURL(scanUrl);
 
     return res.json({
@@ -34,7 +111,13 @@ const getMyTicket = async (req, res) => {
         seat: ticket.seat,
         gate: ticket.gate,
         departureTime: ticket.departureTime,
+        cabinClass: ticket.cabinClass || 'Economy',
+        bookingRef: ticket.bookingRef || '',
+        destination: ticket.destination || '',
         scanId,
+        scanUrl,
+        scanUrlLocal,
+        scanUrlPublic,
         qr: qrDataURL
     });
 };
@@ -65,7 +148,7 @@ const searchTicket = async (req, res) => {
         userId: String(req.session.user.id)
     });
 
-    const scanUrl = buildPublicScanUrl(req, scanId);
+    const { scanUrl, scanUrlLocal, scanUrlPublic } = buildScanUrls(req, scanId);
     const qrDataURL = await QRCode.toDataURL(scanUrl);
 
     return res.json({
@@ -75,6 +158,9 @@ const searchTicket = async (req, res) => {
         gate: ticket.gate,
         departureTime: ticket.departureTime,
         scanId,
+        scanUrl,
+        scanUrlLocal,
+        scanUrlPublic,
         qr: qrDataURL
     });
 };
@@ -84,7 +170,9 @@ const getScanStatus = async (req, res) => {
     const { scanId } = req.params;
     const session = getScanSession(scanId);
 
-    if (!session || session.userId !== String(req.session.user.id)) {
+    // On ne bloque pas sur un changement d'utilisateur en session
+    // (ex: connexion etudiant puis login CTF), sinon le polling tombe en 404.
+    if (!session) {
         return res.status(404).json({ error: 'Session de scan introuvable.' });
     }
 

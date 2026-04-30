@@ -11,8 +11,29 @@
 		<section class="ticket-card" aria-label="Carte d'embarquement">
 			<img class="ticket-background" src="assets/img/billet.png" alt="Carte d'embarquement Air France">
 
+			<!-- Champs superposés — partie gauche (coupon principal) -->
+			<div id="field-passenger-main"  class="ticket-field ticket-passenger-main"></div>
+			<div id="field-date"            class="ticket-field ticket-date">24 MAI 2024</div>
+			<div id="field-class"           class="ticket-field ticket-class"></div>
+			<div id="field-flight-main"     class="ticket-field ticket-flight-main"></div>
+			<div id="field-seat-main"       class="ticket-field ticket-seat-main"></div>
+			<div id="field-gate-main"       class="ticket-field ticket-gate-main"></div>
+			<div id="field-time-main"       class="ticket-field ticket-time-main"></div>
+			<div id="field-from-code"       class="ticket-field ticket-from-code">PARIS (CDG)</div>
+			<div id="field-from-airport"    class="ticket-field ticket-from-airport">AÉROPORT CHARLES DE GAULLE</div>
+			<div id="field-to-code"         class="ticket-field ticket-to-code">LONDRES (LHR)</div>
+			<div id="field-to-airport"      class="ticket-field ticket-to-airport">HEATHROW AIRPORT</div>
+
+			<!-- Champs superposés — partie droite (talon) -->
+			<div id="field-passenger-side"  class="ticket-field ticket-passenger-side"></div>
+			<div id="field-flight-side"     class="ticket-field ticket-flight-side"></div>
+			<div id="field-seat-side"       class="ticket-field ticket-seat-side"></div>
+			<div id="field-gate-side"       class="ticket-field ticket-gate-side"></div>
+			<div id="field-time-side"       class="ticket-field ticket-time-side"></div>
+
+			<!-- QR code (caché jusqu'au chargement) -->
 			<div class="ticket-qr-slot">
-				<img id="ticket-qr" alt="QR code d'embarquement">
+				<img id="ticket-qr" alt="QR code d'embarquement" style="display:none">
 			</div>
 		</section>
 
@@ -22,20 +43,26 @@
 	<script>
 		const statusNode = document.getElementById('ticket-status');
 		let pollHandle = null;
+		let waitTimeoutHandle = null;
 
 		const stopPolling = () => {
 			if (pollHandle) {
 				clearInterval(pollHandle);
 				pollHandle = null;
 			}
+			if (waitTimeoutHandle) {
+				clearTimeout(waitTimeoutHandle);
+				waitTimeoutHandle = null;
+			}
 		};
 
-		const watchScanStatus = (scanId) => {
+		const watchScanStatus = (scanId, scanUrl) => {
 			const checkStatus = () => {
 				fetch(`/billets/scan-status/${encodeURIComponent(scanId)}`, { credentials: 'include' })
 					.then(async (res) => {
 						if (!res.ok) {
-							throw new Error('Scan status indisponible');
+							const raw = await res.text();
+							throw new Error(raw || 'Scan status indisponible');
 						}
 						return res.json();
 					})
@@ -48,14 +75,25 @@
 						statusNode.textContent = 'QR valide. Redirection vers le gate...';
 						window.location.href = payload.redirect;
 					})
-					.catch(() => {
-						statusNode.textContent = 'Erreur de verification du scan QR. Recharge le billet.';
+					.catch((err) => {
+						const msg = (err && err.message) ? err.message : 'Erreur de verification du scan QR.';
+						statusNode.textContent = `${msg} Recharge le billet.`;
 						stopPolling();
 					});
 			};
 
+			waitTimeoutHandle = setTimeout(() => {
+				if (!pollHandle) return;
+				statusNode.textContent = `Scan non detecte. Verifie l'URL du QR: ${scanUrl}`;
+			}, 25000);
+
 			checkStatus();
 			pollHandle = setInterval(checkStatus, 1500);
+		};
+
+		const setText = (id, value) => {
+			const el = document.getElementById(id);
+			if (el && value) el.textContent = value;
 		};
 
 		fetch('/billets/my', { credentials: 'include' })
@@ -66,9 +104,30 @@
 				return res.json();
 			})
 			.then((ticket) => {
-				document.getElementById('ticket-qr').src = ticket.qr;
-				statusNode.textContent = 'Billet charge. Scanne le QR avec ton telephone pour ouvrir le gate ici.';
-				watchScanStatus(ticket.scanId);
+				// Remplir les champs dynamiques
+				setText('field-passenger-main', ticket.passengerName);
+				setText('field-class',          ticket.cabinClass);
+				setText('field-flight-main',    ticket.flightCode);
+				setText('field-seat-main',      ticket.seat);
+				setText('field-gate-main',      ticket.gate);
+				setText('field-time-main',      ticket.departureTime);
+				setText('field-passenger-side', ticket.passengerName);
+				setText('field-flight-side',    ticket.flightCode);
+				setText('field-seat-side',      ticket.seat);
+				setText('field-gate-side',      ticket.gate);
+				setText('field-time-side',      ticket.departureTime);
+
+				// Afficher le QR
+				const qrImg = document.getElementById('ticket-qr');
+				qrImg.src = ticket.qr;
+				qrImg.style.display = '';
+
+				if (ticket.scanUrlPublic) {
+					statusNode.textContent = `Billet charge. Scannez le QR avec votre telephone.`;
+				} else {
+					statusNode.textContent = `Billet charge. URL de scan locale : ${ticket.scanUrlLocal}`;
+				}
+				watchScanStatus(ticket.scanId, ticket.scanUrl);
 			})
 			.catch(() => {
 				statusNode.textContent = 'Impossible de charger le billet. Verifiez votre session.';

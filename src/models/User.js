@@ -19,6 +19,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['admin', 'player'],
         default: 'player'
+    },
+    progress: {
+        loggedIn:      { type: Boolean, default: false },
+        xssDone:       { type: Boolean, default: false },
+        nosqlDone:     { type: Boolean, default: false },
+        logsAccessed:  { type: Boolean, default: false },
+        flagFound:     { type: Boolean, default: false },
+        firstLoginAt:  { type: Date,    default: null  },
+        flagFoundAt:   { type: Date,    default: null  }
     }
 }, { timestamps: true });
 

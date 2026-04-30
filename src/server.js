@@ -29,24 +29,32 @@ const pagesProtegees = ['/billet.html', '/gate.html', '/flag.html'];
 app.use((req, res, next) => {
     if (pagesProtegees.includes(req.path)) {
         if (!req.session.user) {
-            return res.redirect('/login.html');
+            return res.redirect('/register.html');
         }
+    }
+    // Bloquer l'accès direct à index.html sans session
+    if (req.path === '/index.html') {
+        if (!req.session.user) return res.redirect('/register.html');
     }
     next();
 });
 
 // Frontend (HTML/CSS/JS)
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend'), { index: false }));
 
 // Routes
 app.use('/auth',    require('./routes/auth'));
 app.use('/billets', require('./routes/billets'));
 app.use('/gate',    require('./routes/gate'));
 app.use('/flag',    require('./routes/flag'));
+app.use('/admin',   require('./routes/admin'));
 
-// Route racine → sert le frontend/index.html
+// Route racine → inscription si pas de session, sinon intro CTF
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+    if (req.session.user) {
+        return res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+    }
+    res.redirect('/register.html');
 });
 
 const PORT = process.env.PORT || 3000;

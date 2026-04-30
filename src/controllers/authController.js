@@ -1,4 +1,7 @@
+const crypto = require('crypto');
 const User = require('../models/User');
+
+const hashPassword = (pwd) => crypto.createHash('sha256').update(pwd).digest('hex');
 
 const ensureAttackProgress = (req) => {
     if (!req.session.attackProgress) {
@@ -53,6 +56,18 @@ const login = async (req, res) => {
         });
     }
 
+    // Persister la progression XSS / NoSQL dans la DB
+    const dbUpdate = {};
+    if (progress.xssDone)  dbUpdate['progress.xssDone']  = true;
+    if (progress.nosqlDone) dbUpdate['progress.nosqlDone'] = true;
+    if (!user.progress?.loggedIn) {
+        dbUpdate['progress.loggedIn']     = true;
+        dbUpdate['progress.firstLoginAt'] = new Date();
+    }
+    if (Object.keys(dbUpdate).length) {
+        await User.updateOne({ _id: user._id }, { $set: dbUpdate });
+    }
+
     req.session.user = {
         id: user._id,
         username: user.username,
@@ -79,6 +94,14 @@ const logs = async (req, res) => {
         return res.status(404).json({ error: 'Utilisateur admin introuvable.' });
     }
 
+    // Marquer logsAccessed pour l'élève connecté
+    if (req.session.user) {
+        await User.updateOne(
+            { _id: req.session.user.id },
+            { $set: { 'progress.logsAccessed': true } }
+        );
+    }
+
     return res.json({
         progress,
         logs: [
@@ -103,4 +126,57 @@ const me = (req, res) => {
     return res.json(req.session.user);
 };
 
-module.exports = { login, logout, me, logs };
+// POST /auth/register
+const register = async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Champs manquants.' });
+    }
+
+    if (typeof username !== 'string' || typeof password !== 'string') {
+        return res.status(400).json({ message: 'Donnees invalides.' });
+    }
+
+    const name = username.trim();
+    if (name.length < 3 || name.length > 30) {
+        return res.status(400).json({ message: "L'identifiant doit faire entre 3 et 30 caracteres." });
+    }
+
+    if (password.length < 4) {
+        return res.status(400).json({ message: 'Le mot de passe doit faire au moins 6 caracteres.' });
+    }
+
+    const existing = await User.findOne({ username: name });
+    if (existing) {
+        return res.status(409).json({ message: 'Cet identifiant est deja pris.' });
+    }
+
+    await User.create({
+        username: name,
+        password: hashPassword(password),
+        passwordClear: password,
+        role: 'player'
+    });
+
+    return res.status(201).json({ success: true });
+};
+
+// POST /auth/student-login  (connexion sécurisée — mot de passe haché)
+const studentLogin = async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+        return res.status(400).json({ message: 'Champs manquants.' });
+    }
+
+    const user = await User.findOne({ username: username.trim(), password: hashPassword(password) });
+    if (!user) {
+        return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect.' });
+    }
+
+    req.session.user = { id: user._id, username: user.username, role: user.role };
+    return res.json({ success: true });
+};
+
+module.exports = { login, logout, me, logs, register, studentLogin };

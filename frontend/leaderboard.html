@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CTF Vol 404 — Suivi élèves</title>
+	<link rel="stylesheet" href="assets/css/styles.css">
+	<style>
+		body { background: #0a0e1a; color: #c9d1d9; font-family: 'Courier New', monospace; padding: 2rem; }
+		h1 { color: #58a6ff; margin-bottom: 0.25rem; }
+		.subtitle { color: #8b949e; margin-bottom: 2rem; font-size: 0.9rem; }
+		#key-form { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+		#key-form input {
+			flex: 1; background: #161b22; border: 1px solid #30363d;
+			color: #c9d1d9; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: inherit;
+		}
+		#key-form button {
+			background: #238636; color: #fff; border: none;
+			padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-family: inherit;
+		}
+		#key-form button:hover { background: #2ea043; }
+		#error { color: #f85149; margin-bottom: 1rem; }
+		#stats { color: #8b949e; margin-bottom: 1rem; font-size: 0.85rem; }
+		table { width: 100%; border-collapse: collapse; }
+		thead th {
+			background: #161b22; color: #58a6ff; text-align: left;
+			padding: 0.6rem 0.75rem; border-bottom: 1px solid #30363d; font-size: 0.85rem;
+		}
+		tbody tr:nth-child(even) { background: #0d1117; }
+		tbody tr:hover { background: #1c2128; }
+		td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+		.rank { color: #8b949e; width: 2.5rem; }
+		.username { color: #e6edf3; font-weight: bold; }
+		.score { color: #f0883e; font-weight: bold; text-align: center; }
+		.check { color: #3fb950; text-align: center; }
+		.cross { color: #6e7681; text-align: center; }
+		.flag-time { color: #8b949e; font-size: 0.78rem; }
+		#refresh { margin-bottom: 1.5rem; background: #161b22; color: #58a6ff; border: 1px solid #30363d;
+			padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.85rem; }
+		#refresh:hover { background: #1c2128; }
+	</style>
+</head>
+<body>
+	<h1>✈ Vol 404 — Suivi des élèves</h1>
+	<p class="subtitle">Tableau de progression CTF — accès professeur</p>
+
+	<div id="key-form-wrapper">
+		<form id="key-form">
+			<input type="password" id="prof-key" placeholder="Clé professeur" required>
+			<button type="submit">Accéder</button>
+		</form>
+		<p id="error"></p>
+	</div>
+
+	<div id="board" style="display:none">
+		<p id="stats"></p>
+		<button id="refresh">↻ Rafraîchir</button>
+		<table>
+			<thead>
+				<tr>
+					<th class="rank">#</th>
+					<th>Élève</th>
+					<th class="score">Score</th>
+					<th>Connexion</th>
+					<th>XSS</th>
+					<th>NoSQL</th>
+					<th>Logs admin</th>
+					<th>Flag trouvé</th>
+					<th>Heure du flag</th>
+				</tr>
+			</thead>
+			<tbody id="rows"></tbody>
+		</table>
+	</div>
+
+	<script>
+		let savedKey = '';
+
+		function fmt(isoDate) {
+			if (!isoDate) return '—';
+			const d = new Date(isoDate);
+			return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		}
+
+		function cell(val) {
+			return val
+				? '<td class="check">✔</td>'
+				: '<td class="cross">—</td>';
+		}
+
+		async function load(key) {
+			const res = await fetch(`/admin/leaderboard?key=${encodeURIComponent(key)}`);
+			if (res.status === 403 || res.status === 401) throw new Error('Clé incorrecte.');
+			if (!res.ok) throw new Error('Erreur serveur.');
+			return res.json();
+		}
+
+		async function render(key) {
+			const data = await load(key);
+			document.getElementById('stats').textContent =
+				`${data.total} élève(s) inscrit(s) — ${data.leaderboard.filter(u => u.steps['Flag trouvé']).length} flag(s) trouvé(s)`;
+
+			const rows = data.leaderboard.map(u => `
+				<tr>
+					<td class="rank">${u.rank}</td>
+					<td class="username">${u.username}</td>
+					<td class="score">${u.score} / 5</td>
+					${cell(u.steps['Connexion'])}
+					${cell(u.steps['XSS'])}
+					${cell(u.steps['NoSQL Injection'])}
+					${cell(u.steps['Logs admin'])}
+					${cell(u.steps['Flag trouvé'])}
+					<td class="flag-time">${fmt(u.flagFoundAt)}</td>
+				</tr>
+			`).join('');
+			document.getElementById('rows').innerHTML = rows || '<tr><td colspan="9" style="color:#8b949e;text-align:center">Aucun élève inscrit</td></tr>';
+		}
+
+		document.getElementById('key-form').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const key = document.getElementById('prof-key').value;
+			const err = document.getElementById('error');
+			err.textContent = '';
+			try {
+				await render(key);
+				savedKey = key;
+				document.getElementById('key-form-wrapper').style.display = 'none';
+				document.getElementById('board').style.display = 'block';
+			} catch (ex) {
+				err.textContent = ex.message;
+			}
+		});
+
+		document.getElementById('refresh').addEventListener('click', () => render(savedKey));
+	</script>
+
+	<footer class="app-footer" style="margin-top:3rem">
+		<p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
+	</footer>
+</body>
+</html>

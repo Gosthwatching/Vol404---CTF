@@ -87,6 +87,9 @@ const specialProfiles = {
         specialTags: ['EXST'],
         baggage: '1PC HOLD + CABIN',
         manifestNotes: 'Siege additionnel bloque sur le dossier.'
+    },
+    pauline_g: {
+        seat: '27C'
     }
 };
 
@@ -259,6 +262,8 @@ const orderedPassengers = (() => {
 })();
 
 const seed = async () => {
+    const shouldReset = process.argv.includes('--reset');
+
     if (!MONGO_URI) {
         throw new Error('MONGO_URI manquant. Verifie le fichier .env a la racine du projet.');
     }
@@ -284,42 +289,56 @@ const seed = async () => {
 
     console.log('Connecté à MongoDB');
 
-    // Nettoyage
-    await User.deleteMany({});
-    await Ticket.deleteMany({});
-    console.log('Collections vidées');
+    if (shouldReset) {
+        // Reset complet explicite
+        await User.deleteMany({});
+        await Ticket.deleteMany({});
+        console.log('Collections vidées (mode reset).');
+    } else {
+        console.log('Mode seed non destructif: les comptes existants sont conservés.');
+    }
 
     for (const [index, p] of orderedPassengers.entries()) {
         const isAlice = p.username === 'alice';
         const manifestDetails = buildManifestDetails(p, index);
         // Alice gets a fresh random password on each seed so the intended CTF path stays injection-based.
         const clearPassword = isAlice ? crypto.randomBytes(16).toString('hex') : p.password;
-        const user = await User.create({
-            username: p.username,
-            password: hashPassword(clearPassword),
-            passwordClear: clearPassword,
-            role: isAlice ? 'admin' : 'player'
-        });
+        const user = await User.findOneAndUpdate(
+            { username: p.username },
+            {
+                $set: {
+                    password: hashPassword(clearPassword),
+                    passwordClear: clearPassword,
+                    role: isAlice ? 'admin' : 'player'
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         const qrToken = crypto.randomBytes(16).toString('hex');
 
-        await Ticket.create({
-            userId: user._id,
-            passengerName: p.name,
-            flightCode: flightConfig.flightCode,
-            seat: manifestDetails.seat,
-            gate: manifestDetails.gate,
-            destination: isAlice ? 'Destination chiffree' : flightConfig.destination,
-            qrToken: qrToken,
-            departureTime: manifestDetails.departureTime,
-            aircraftType: manifestDetails.aircraftType,
-            aircraftRegistration: manifestDetails.aircraftRegistration,
-            cabinClass: manifestDetails.cabinClass,
-            bookingRef: manifestDetails.bookingRef,
-            baggage: manifestDetails.baggage,
-            specialTags: manifestDetails.specialTags,
-            manifestNotes: manifestDetails.manifestNotes
-        });
+        await Ticket.findOneAndUpdate(
+            { userId: user._id },
+            {
+                $set: {
+                    passengerName: p.name,
+                    flightCode: flightConfig.flightCode,
+                    seat: manifestDetails.seat,
+                    gate: manifestDetails.gate,
+                    destination: isAlice ? 'Destination chiffree' : flightConfig.destination,
+                    qrToken: qrToken,
+                    departureTime: manifestDetails.departureTime,
+                    aircraftType: manifestDetails.aircraftType,
+                    aircraftRegistration: manifestDetails.aircraftRegistration,
+                    cabinClass: manifestDetails.cabinClass,
+                    bookingRef: manifestDetails.bookingRef,
+                    baggage: manifestDetails.baggage,
+                    specialTags: manifestDetails.specialTags,
+                    manifestNotes: manifestDetails.manifestNotes
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         if (isAlice) {
             console.log(`[ALICE] QR Token : ${qrToken}`);
@@ -327,7 +346,7 @@ const seed = async () => {
         }
     }
 
-    console.log(`${orderedPassengers.length} passagers créés.`);
+    console.log(`${orderedPassengers.length} passagers seedés.`);
     await mongoose.disconnect();
     console.log('Seed terminé.');
 };
