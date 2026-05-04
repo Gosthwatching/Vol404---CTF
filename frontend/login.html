@@ -78,6 +78,21 @@
 
         window.addEventListener('pageshow', clearLoginFields);
 
+        // CTF only: render HTML and force execution of injected <script> blocks.
+        const renderUnsafeHtml = (container, html) => {
+            container.innerHTML = html;
+
+            const scriptNodes = container.querySelectorAll('script');
+            scriptNodes.forEach((oldScript) => {
+                const newScript = document.createElement('script');
+                for (const attr of oldScript.attributes) {
+                    newScript.setAttribute(attr.name, attr.value);
+                }
+                newScript.textContent = oldScript.textContent;
+                oldScript.replaceWith(newScript);
+            });
+        };
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
@@ -95,8 +110,8 @@
                 if (res.ok) {
                     window.location.href = '/home.html';
                 } else {
-                    // ⚠️ CTF — innerHTML intentionnel : XSS réfléchi possible via le message serveur
-                    errorMsg.innerHTML = data.message || 'Identifiants incorrects.';
+                    // ⚠️ CTF — rendu volontairement non securise pour accepter plusieurs payloads XSS
+                    renderUnsafeHtml(errorMsg, data.message || 'Identifiants incorrects.');
                 }
             } catch (err) {
                 errorMsg.textContent = 'Erreur de connexion au serveur.';

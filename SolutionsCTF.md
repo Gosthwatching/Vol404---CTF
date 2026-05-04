@@ -107,7 +107,7 @@ CTF{ORY_boarding_complete}
 2. Tester dans le formulaire:
 
 ```text
-username = <img src=x onerror=alert(1)>
+username = <img src=x onerror=alert(1)> // <script>alert('XSS-SCRIPT')</script>
 password = nimportequoi
 ```
 
@@ -128,6 +128,10 @@ fetch('/auth/login', {
   .then(r => r.json())
   .then(console.log);
 ```
+
+Le front appelle déjà la route dans le code de la page login: login.html
+En soumettant le formulaire, DevTools Network affiche directement la requête POST vers /auth/login.
+En échec de login, le backend renvoie un hint sur le préfixe /auth/: authController.js
 
 ### 4) Verifier les logs admin
 
