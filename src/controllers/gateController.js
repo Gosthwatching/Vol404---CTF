@@ -10,7 +10,7 @@ const buildGatePayload = (ticket) => {
         gate: ticket.gate,
         flightCode: ticket.flightCode,
         message: encoded,
-        hint: 'QTH Locator : JN03EL',
+        hint: 'QTH Locator : JN18ER',
         indice: 'La cle survole la banlieue parisienne...'
     };
 };

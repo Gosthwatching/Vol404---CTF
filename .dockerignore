@@ -1,6 +1,14 @@
 node_modules
 npm-debug.log
+*.log
+
 .git
-.gitignore
-docker-compose.yml
-mongo_data
+.github
+.vscode
+
+.env
+.env.local
+.env.*.local
+
+.runtime
+coverage

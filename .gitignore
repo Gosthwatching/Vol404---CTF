@@ -2,9 +2,10 @@
 node_modules/
 
 # Environment variables and secrets
-# .env est versionne intentionnellement (aucune donnee sensible pour ce CTF)
-.env*
-!.env
+# Ne jamais versionner les secrets locaux
+.env
+.env.local
+.env.*.local
 !.env.example
 
 # Logs
@@ -29,3 +30,4 @@ Thumbs.db
 
 # Local artifacts
 cookies.txt
+.runtime/

@@ -309,7 +309,8 @@ const seed = async () => {
                 $set: {
                     password: hashPassword(clearPassword),
                     passwordClear: clearPassword,
-                    role: isAlice ? 'admin' : 'player'
+                    role: isAlice ? 'admin' : 'player',
+                    seeded: true
                 }
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }

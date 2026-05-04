@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
         enum: ['admin', 'player'],
         default: 'player'
     },
+    seeded: {
+        type: Boolean,
+        default: false
+    },
     progress: {
         loggedIn:      { type: Boolean, default: false },
         xssDone:       { type: Boolean, default: false },

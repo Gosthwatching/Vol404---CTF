@@ -151,7 +151,7 @@ http://localhost:3000/auth/logs
 Le JSON gate ressemble a:
 
 ```json
-{"gate":"B7","flightCode":"AF404","message":"RVN","hint":"QTH Locator : JN03EL","indice":"La cle survole la banlieue parisienne..."}
+{"gate":"B7","flightCode":"AF404","message":"RVN","hint":"QTH Locator : JN18ER","indice":"La cle survole la banlieue parisienne..."}
 ```
 
 ### 6) Envoyer le code final depuis le navigateur

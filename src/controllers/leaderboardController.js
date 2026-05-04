@@ -16,7 +16,7 @@ const scoreOf = (progress = {}) =>
 // GET /admin/leaderboard
 const getLeaderboard = async (req, res) => {
     const users = await User.find(
-        { role: 'player' },
+        { role: 'player', seeded: { $ne: true } },
         { username: 1, progress: 1, createdAt: 1 }
     ).lean();
 
