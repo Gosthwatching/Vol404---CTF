@@ -1,15 +1,15 @@
-// Monologue d’intro pour le CTF
+// Monologue d intro pour le CTF
 const fakeBootData = {
   lines: [
-    ">> Initialisation du système d’embarquement.................100%",
-    ">> Système d’embarquement initialisé............100%",
+    ">> Initialisation du système d'embarquement.................100%",
+    ">> Système d'embarquement initialisé............100%",
     ">> Analyse des passagers en cours.......................................100%",
     ">> Un billet mystérieux vous attend.",
     ">> Saurez-vous le trouver ?",
     ">> Attention : chaque détail compte.",
     ">> Les indices sont parfois cachés là où on ne les attend pas...",
     ">> Prêt à relever le défi ?",
-    ">> Cliquez pour commencer l’aventure !"
+    ">> Cliquez pour commencer l'aventure !"
   ]
 };
 
@@ -18,6 +18,7 @@ const loader = document.getElementById("loader");
 
 let lineIndex = 0;
 let isNavigatingToLogin = false;
+let hasBootStarted = false;
 
 function goToLoginWithTransition() {
   if (isNavigatingToLogin) {
@@ -75,5 +76,11 @@ function displayNextLine() {
 }
 
 window.addEventListener("load", () => {
+  if (hasBootStarted) {
+    return;
+  }
+  hasBootStarted = true;
+  codeContainer.innerHTML = "";
+  lineIndex = 0;
   displayNextLine();
 });

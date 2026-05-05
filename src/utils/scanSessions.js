@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 
-const SCAN_TTL_MS = 15 * 60 * 1000;
+const configuredTtl = Number.parseInt(process.env.SCAN_TTL_MS || '', 10);
+const SCAN_TTL_MS = Number.isFinite(configuredTtl) && configuredTtl > 0
+    ? configuredTtl
+    : 6 * 60 * 60 * 1000;
 const scanSessions = new Map();
 
 const purgeExpired = () => {
@@ -46,8 +49,39 @@ const markScanAsCompleted = (scanId) => {
     return session;
 };
 
+const markScanByToken = (scanId, ticketToken) => {
+    if (!scanId || !ticketToken) {
+        return null;
+    }
+
+    purgeExpired();
+
+    const now = Date.now();
+    const existing = scanSessions.get(scanId);
+
+    if (existing) {
+        existing.ticketToken = ticketToken;
+        existing.scanned = true;
+        existing.scannedAt = now;
+        return existing;
+    }
+
+    const restored = {
+        scanId,
+        ticketToken,
+        userId: null,
+        scanned: true,
+        createdAt: now,
+        scannedAt: now
+    };
+
+    scanSessions.set(scanId, restored);
+    return restored;
+};
+
 module.exports = {
     createScanSession,
     getScanSession,
-    markScanAsCompleted
+    markScanAsCompleted,
+    markScanByToken
 };

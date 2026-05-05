@@ -4,88 +4,120 @@ const User = require('../models/User');
 const Ticket = require('../models/Billet');
 const { createScanSession, getScanSession } = require('../utils/scanSessions');
 
+const isPrivateIpv4 = (ip) => {
+    return ip.startsWith('192.168.') || ip.startsWith('10.') || /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip);
+};
+
+const firstForwardedValue = (value) => {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    return value.split(',')[0].trim();
+};
+
+const normalizeBaseUrl = (value) => {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    return value.trim().replace(/\/$/, '');
+};
+
+const getPortFromHost = (host) => {
+    const match = String(host || '').match(/:(\d+)$/);
+    return match ? match[1] : '3000';
+};
+
+const isNonPublicHost = (host) => {
+    const h = String(host || '');
+    // localhost / loopback
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(h)) return true;
+    // Docker bridge IPs (172.16-31.x) — not reachable from outside the host
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./i.test(h)) return true;
+    return false;
+};
+
 const getPreferredLanIp = () => {
     const interfaces = os.networkInterfaces();
-    const all = Object.entries(interfaces).flatMap(([name, nets]) =>
-        (nets || []).map((net) => ({ name, ...net }))
-    );
 
-    const isPrivateIpv4 = (ip) =>
-        ip.startsWith('192.168.') || ip.startsWith('10.') || /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip);
-
-    const usable = all.filter((net) =>
-        net.family === 'IPv4' &&
-        !net.internal &&
-        typeof net.address === 'string' &&
-        isPrivateIpv4(net.address)
-    );
-
-    const scoreInterface = (name = '') => {
-        const n = name.toLowerCase();
-        let score = 0;
-
-        if (/wi-?fi|wlan/.test(n)) score += 50;
-        if (/ethernet|eth/.test(n)) score += 30;
-
-        // Exclure les interfaces virtuelles / VPN quand c'est possible.
-        if (/vethernet|hyper-v|virtual|vmware|docker|wsl|nord|vpn|loopback|tunnel/.test(n)) score -= 80;
-
-        return score;
-    };
-
-    const ranked = usable
-        .map((net) => ({ ...net, score: scoreInterface(net.name) }))
-        .sort((a, b) => b.score - a.score);
-
-    return ranked[0]?.address || usable[0]?.address || null;
-};
-
-const buildPublicScanUrl = (req, scanId) => {
-    const forwardedProto = req.get('x-forwarded-proto');
-    const forwardedHost = req.get('x-forwarded-host');
-    const requestProto = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
-    const requestHost = forwardedHost ? forwardedHost.split(',')[0].trim() : req.get('host');
-    const isDockerRuntime = process.env.DOCKER === 'true' || require('fs').existsSync('/.dockerenv');
-
-    if (process.env.PUBLIC_BASE_URL) {
-        return `${process.env.PUBLIC_BASE_URL}/gate/scan/${scanId}`;
-    }
-
-    let effectiveHost = requestHost;
-    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestHost || '')) {
-        // En conteneur Docker, l'IP détectée depuis les interfaces est souvent celle du bridge
-        // (ex: 172.x) et n'est pas joignable depuis le téléphone.
-        if (isDockerRuntime) {
-            return `${requestProto}://${requestHost}/gate/scan/${scanId}`;
-        }
-
-        const lanIp = getPreferredLanIp();
-        if (lanIp) {
-            const portMatch = requestHost.match(/:(\d+)$/);
-            const port = portMatch ? `:${portMatch[1]}` : '';
-            effectiveHost = `${lanIp}${port}`;
+    for (const nets of Object.values(interfaces)) {
+        for (const net of nets || []) {
+            if (net.family !== 'IPv4') continue;
+            if (net.internal) continue;
+            if (!net.address || !isPrivateIpv4(net.address)) continue;
+            return net.address;
         }
     }
 
-    const publicBaseUrl = `${requestProto}://${effectiveHost}`;
-    return `${publicBaseUrl}/gate/scan/${scanId}`;
+    return null;
 };
 
-const buildScanUrls = (req, scanId) => {
-    const forwardedProto = req.get('x-forwarded-proto');
-    const requestProto = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
-    const host = req.get('host') || 'localhost:3000';
-    const portMatch = host.match(/:(\d+)$/);
-    const port = portMatch ? portMatch[1] : '3000';
+const buildScanPath = (scanId, ticketToken) => {
+    const token = encodeURIComponent(ticketToken);
+    return `/gate/scan/${scanId}?token=${token}`;
+};
 
-    const scanUrlLocal = `http://localhost:${port}/gate/scan/${scanId}`;
-    const publicCandidate = buildPublicScanUrl(req, scanId);
-    const isLocalOnly = /:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(publicCandidate);
+const getRequestProtoAndHost = (req) => {
+    const proto = firstForwardedValue(req.get('x-forwarded-proto')) || req.protocol;
+    const host = firstForwardedValue(req.get('x-forwarded-host')) || req.get('host') || 'localhost:3000';
+    return { proto, host };
+};
+
+const buildPublicScanUrl = (req, scanId, ticketToken) => {
+    const { proto, host } = getRequestProtoAndHost(req);
+    const scanPath = buildScanPath(scanId, ticketToken);
+
+    // Si la requete est deja sur une URL publique (tunnel/domaine), on la prefere.
+    if (!isNonPublicHost(host)) {
+        return `${proto}://${host}${scanPath}`;
+    }
+
+    // Sinon, on tente PUBLIC_BASE_URL, puis l'IP LAN.
+    const envBaseUrl = normalizeBaseUrl(process.env.PUBLIC_BASE_URL);
+    if (envBaseUrl) {
+        return `${envBaseUrl}${scanPath}`;
+    }
+
+    const lanIp = getPreferredLanIp();
+    if (lanIp) {
+        return `${proto}://${lanIp}:${getPortFromHost(host)}${scanPath}`;
+    }
+
+    return `${proto}://${host}${scanPath}`;
+};
+
+const buildScanUrls = (req, scanId, ticketToken) => {
+    const { host } = getRequestProtoAndHost(req);
+    const scanPath = buildScanPath(scanId, ticketToken);
+    const port = getPortFromHost(host);
+
+    const scanUrlLocal = `http://localhost:${port}${scanPath}`;
+    const scanUrlPublic = buildPublicScanUrl(req, scanId, ticketToken);
+    const useLocalUrl = isNonPublicHost(new URL(scanUrlPublic).host);
 
     return {
         scanUrlLocal,
-        scanUrlPublic: isLocalOnly ? null : publicCandidate,
-        scanUrl: isLocalOnly ? scanUrlLocal : publicCandidate
+        scanUrlPublic: useLocalUrl ? null : scanUrlPublic,
+        scanUrl: useLocalUrl ? scanUrlLocal : scanUrlPublic
+    };
+};
+
+const buildTicketResponse = async (ticket, scanUrls, scanId) => {
+    const qrDataURL = await QRCode.toDataURL(scanUrls.scanUrl);
+
+    return {
+        passengerName: ticket.passengerName,
+        flightCode: ticket.flightCode,
+        seat: ticket.seat,
+        gate: ticket.gate,
+        departureTime: ticket.departureTime,
+        cabinClass: ticket.cabinClass || 'Economy',
+        bookingRef: ticket.bookingRef || '',
+        destination: ticket.destination || '',
+        scanId,
+        scanUrl: scanUrls.scanUrl,
+        scanUrlLocal: scanUrls.scanUrlLocal,
+        scanUrlPublic: scanUrls.scanUrlPublic,
+        qr: qrDataURL
     };
 };
 
@@ -102,24 +134,9 @@ const getMyTicket = async (req, res) => {
         userId: String(req.session.user.id)
     });
 
-    const { scanUrl, scanUrlLocal, scanUrlPublic } = buildScanUrls(req, scanId);
-    const qrDataURL = await QRCode.toDataURL(scanUrl);
-
-    return res.json({
-        passengerName: ticket.passengerName,
-        flightCode: ticket.flightCode,
-        seat: ticket.seat,
-        gate: ticket.gate,
-        departureTime: ticket.departureTime,
-        cabinClass: ticket.cabinClass || 'Economy',
-        bookingRef: ticket.bookingRef || '',
-        destination: ticket.destination || '',
-        scanId,
-        scanUrl,
-        scanUrlLocal,
-        scanUrlPublic,
-        qr: qrDataURL
-    });
+    const scanUrls = buildScanUrls(req, scanId, ticket.qrToken);
+    const response = await buildTicketResponse(ticket, scanUrls, scanId);
+    return res.json(response);
 };
 
 // POST /tickets/search — ⚠️ FAILLE INTENTIONNELLE NoSQL Injection
@@ -148,21 +165,9 @@ const searchTicket = async (req, res) => {
         userId: String(req.session.user.id)
     });
 
-    const { scanUrl, scanUrlLocal, scanUrlPublic } = buildScanUrls(req, scanId);
-    const qrDataURL = await QRCode.toDataURL(scanUrl);
-
-    return res.json({
-        passengerName: ticket.passengerName,
-        flightCode: ticket.flightCode,
-        seat: ticket.seat,
-        gate: ticket.gate,
-        departureTime: ticket.departureTime,
-        scanId,
-        scanUrl,
-        scanUrlLocal,
-        scanUrlPublic,
-        qr: qrDataURL
-    });
+    const scanUrls = buildScanUrls(req, scanId, ticket.qrToken);
+    const response = await buildTicketResponse(ticket, scanUrls, scanId);
+    return res.json(response);
 };
 
 // GET /billets/scan-status/:scanId — polling côté PC pour vérifier le scan QR
@@ -173,7 +178,7 @@ const getScanStatus = async (req, res) => {
     // On ne bloque pas sur un changement d'utilisateur en session
     // (ex: connexion etudiant puis login CTF), sinon le polling tombe en 404.
     if (!session) {
-        return res.status(404).json({ error: 'Session de scan introuvable.' });
+        return res.json({ scanned: false, stale: true });
     }
 
     if (!session.scanned) {

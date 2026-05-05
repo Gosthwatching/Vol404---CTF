@@ -1,6 +1,6 @@
 const Ticket = require('../models/Billet');
 const { vigenereEncode } = require('../utils/vigenere');
-const { getScanSession, markScanAsCompleted } = require('../utils/scanSessions');
+const { getScanSession, markScanAsCompleted, markScanByToken } = require('../utils/scanSessions');
 
 const buildGatePayload = (ticket) => {
     const secret = 'DEPARTEMENT94';
@@ -30,16 +30,26 @@ const getGate = async (req, res) => {
 // GET /gate/scan/:scanId — appelé par le téléphone via QR
 const scanGate = async (req, res) => {
     const { scanId } = req.params;
-    const session = markScanAsCompleted(scanId);
+    const tokenHint = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+    let session = markScanAsCompleted(scanId);
 
-    if (!session) {
-        return res.status(404).json({ error: 'QR invalide ou expire.' });
+    let ticket = null;
+
+    if (session) {
+        ticket = await Ticket.findOne({ qrToken: session.ticketToken });
     }
 
-    const ticket = await Ticket.findOne({ qrToken: session.ticketToken });
+    // Fallback: if the ephemeral scan session is missing/expired,
+    // recover the scan using the token embedded in the QR URL.
+    if (!ticket && tokenHint) {
+        ticket = await Ticket.findOne({ qrToken: tokenHint });
+        if (ticket) {
+            session = markScanByToken(scanId, tokenHint);
+        }
+    }
 
     if (!ticket) {
-        return res.status(404).json({ error: 'Gate introuvable ou token invalide.' });
+        return res.status(404).json({ error: 'QR invalide ou expire.' });
     }
 
     return res.json(buildGatePayload(ticket));

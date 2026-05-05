@@ -196,3 +196,8 @@ CTF{ORY_boarding_complete}
 2. Si le telephone ne charge pas l'URL LAN: verifier meme Wi-Fi + firewall Windows port 3000
 3. Si le QR ne debloque pas le PC: recharger `billet.html` pour regenerer un QR (nouveau `scanId`)
 4. Si la session expire: refaire login puis reprendre a l'etape billet
+
+
+
+## idée possible pour finir le storytelling
+on pourrait faire de la gestion de token avec un truc en mode ils ont telle temps pour pouvoir le valider et pour récuperer le token il devraient faire du fishing
