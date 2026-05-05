@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manifest Vol AF404</title>
+  <title>Manifests Vol404</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="passengers-page">
   <div class="shell">
     <section class="flight-card">
-      <h1>Manifest passagers AF404</h1>
+      <h1>Manifests passagers multi-vol</h1>
       <p class="subtitle">Liste simplifiee d embarquement avec places, horaire, porte et avion affecte.</p>
       <div class="flight-info" id="flight-info">
         <span>Chargement des informations vol...</span>
       </div>
     </section>
-
+    <section class="manifest-tabs" id="manifest-tabs">
+      <div class="manifest-tabs-inner" id="manifest-tabs-inner">
+        <button class="manifest-tab active" disabled>Chargement...</button>
+      </div>
+    </section>
     <section class="table-wrap">
       <div class="table-scroll">
         <table id="passenger-table">
@@ -77,65 +81,119 @@
       return rendered.length ? rendered.join('') : '<span class="row-sub">Aucun tag</span>';
     };
 
-    const updateFlightInfo = (firstPassenger, count) => {
+    const updateFlightInfo = (manifest, count) => {
       const flightInfo = document.getElementById('flight-info');
 
-      if (!firstPassenger) {
+      if (!manifest) {
         flightInfo.innerHTML = '<span>Aucune information disponible.</span>';
         return;
       }
 
       flightInfo.innerHTML = `
-        <span><strong>Vol:</strong> ${escapeHtml(firstPassenger.flightCode)}</span>
+        <span><strong>Vol:</strong> ${escapeHtml(manifest.flightCode)}</span>
         <span><strong>Pax:</strong> ${count}</span>
-        <span><strong>Porte:</strong> ${escapeHtml(firstPassenger.gate)}</span>
-        <span><strong>STD:</strong> ${escapeHtml(firstPassenger.departureTime)}</span>
-        <span><strong>Avion:</strong> ${escapeHtml(firstPassenger.aircraftType || 'N/A')}</span>
-        <span><strong>Immat.:</strong> ${escapeHtml(firstPassenger.aircraftRegistration || 'N/A')}</span>
+        <span><strong>Porte:</strong> ${escapeHtml(manifest.gate || 'N/A')}</span>
+        <span><strong>STD:</strong> ${escapeHtml(manifest.departureTime || 'N/A')}</span>
+        <span><strong>Destination:</strong> ${escapeHtml(manifest.destination || 'N/A')}</span>
+        <span><strong>Avion:</strong> ${escapeHtml(manifest.aircraftType || 'N/A')}</span>
+        <span><strong>Immat.:</strong> ${escapeHtml(manifest.aircraftRegistration || 'N/A')}</span>
       `;
     };
 
-    fetch('/billets/passengers')
-      .then((res) => res.json())
-      .then((data) => {
-        const tbody = document.getElementById('passenger-body');
-        tbody.innerHTML = '';
+    const renderPassengers = (data) => {
+      const tbody = document.getElementById('passenger-body');
+      tbody.innerHTML = '';
 
-        if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="9" class="manifest-empty-state">Aucun passager enregistre.</td></tr>';
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="manifest-empty-state">Aucun passager enregistre.</td></tr>';
+        return;
+      }
+
+      data.forEach((passenger, index) => {
+        const row = document.createElement('tr');
+        row.classList.add('passenger-row');
+
+        row.innerHTML = `
+          <td class="mono" data-label="#">${index + 1}</td>
+          <td data-label="Passager">
+            <div class="passenger-head">
+              <strong>${escapeHtml(passenger.passengerName)}</strong>
+            </div>
+            <div class="row-sub">${escapeHtml(passenger.manifestNotes || 'embarquement standard')}</div>
+          </td>
+          <td class="mono" data-label="Dossier">${escapeHtml(passenger.bookingRef || 'N/A')}</td>
+          <td class="mono" data-label="Siege">${escapeHtml(passenger.seat)}</td>
+          <td data-label="Cabine">${escapeHtml(passenger.cabinClass || 'Economy')}</td>
+          <td class="mono" data-label="Porte">${escapeHtml(passenger.gate)}</td>
+          <td class="mono" data-label="STD">${escapeHtml(passenger.departureTime)}</td>
+          <td data-label="Avion">
+            <div>${escapeHtml(passenger.aircraftType || 'N/A')}</div>
+            <div class="row-sub">${escapeHtml(passenger.aircraftRegistration || '')}</div>
+          </td>
+          <td data-label="Options">
+            <div class="tag-list">${renderTags(passenger.specialTags)}</div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    };
+
+    const setActiveTab = (flightCode) => {
+      const tabs = document.querySelectorAll('.manifest-tab');
+
+      tabs.forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.flightCode === flightCode);
+      });
+    };
+
+    const loadPassengersByManifest = (manifest) => {
+      const params = new URLSearchParams({ flightCode: manifest.flightCode });
+
+      return fetch(`/billets/passengers?${params.toString()}`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Erreur chargement passagers');
+          }
+          return res.json();
+        })
+        .then((data) => {
+          renderPassengers(data);
+          updateFlightInfo(manifest, data.length);
+          setActiveTab(manifest.flightCode);
+        });
+    };
+
+    const renderManifestTabs = (manifests) => {
+      const tabContainer = document.getElementById('manifest-tabs-inner');
+      tabContainer.innerHTML = '';
+
+      manifests.forEach((manifest) => {
+        const button = document.createElement('button');
+        button.className = 'manifest-tab';
+        button.dataset.flightCode = manifest.flightCode;
+        button.innerHTML = `<strong>${escapeHtml(manifest.flightCode)}</strong><span>${escapeHtml(manifest.destination || 'N/A')}</span>`;
+        button.addEventListener('click', () => {
+          loadPassengersByManifest(manifest).catch(() => {
+            document.getElementById('message').textContent = 'Erreur lors du chargement du manifest.';
+          });
+        });
+        tabContainer.appendChild(button);
+      });
+    };
+
+    fetch('/billets/manifests')
+      .then((res) => res.json())
+      .then((manifests) => {
+        const sorted = Array.isArray(manifests) ? manifests : [];
+
+        if (!sorted.length) {
+          renderPassengers([]);
           updateFlightInfo(null, 0);
           return;
         }
 
-        updateFlightInfo(data[0], data.length);
-
-        data.forEach((passenger, index) => {
-          const row = document.createElement('tr');
-          row.classList.add('passenger-row');
-
-          row.innerHTML = `
-            <td class="mono" data-label="#">${index + 1}</td>
-            <td data-label="Passager">
-              <div class="passenger-head">
-                <strong>${escapeHtml(passenger.passengerName)}</strong>
-              </div>
-              <div class="row-sub">${escapeHtml(passenger.manifestNotes || 'embarquement standard')}</div>
-            </td>
-            <td class="mono" data-label="Dossier">${escapeHtml(passenger.bookingRef || 'N/A')}</td>
-            <td class="mono" data-label="Siege">${escapeHtml(passenger.seat)}</td>
-            <td data-label="Cabine">${escapeHtml(passenger.cabinClass || 'Economy')}</td>
-            <td class="mono" data-label="Porte">${escapeHtml(passenger.gate)}</td>
-            <td class="mono" data-label="STD">${escapeHtml(passenger.departureTime)}</td>
-            <td data-label="Avion">
-              <div>${escapeHtml(passenger.aircraftType || 'N/A')}</div>
-              <div class="row-sub">${escapeHtml(passenger.aircraftRegistration || '')}</div>
-            </td>
-            <td data-label="Options">
-              <div class="tag-list">${renderTags(passenger.specialTags)}</div>
-            </td>
-          `;
-          tbody.appendChild(row);
-        });
+        renderManifestTabs(sorted);
+        return loadPassengersByManifest(sorted[0]);
       })
       .catch(() => {
         document.getElementById('message').textContent = 'Erreur lors du chargement du manifest.';

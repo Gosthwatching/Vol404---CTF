@@ -1,0 +1,46 @@
+{
+  "alice": {
+    "seat": "17C",
+    "cabinClass": "Premium Economy",
+    "baggage": "2PC HOLD + CABIN",
+    "specialTags": ["PRIO", "VIP", "SECURITY"],
+    "manifestNotes": "Briefing surete requis avant embarquement."
+  },
+  "xavier_p": {
+    "specialTags": ["SECURITY"],
+    "manifestNotes": "Verification documentaire secondaire demandee en porte."
+  },
+  "stephane_m": {
+    "specialTags": ["PRIO", "SECURITY"],
+    "manifestNotes": "Controle surete manuel demande avant embarquement."
+  },
+  "Zorrow": {
+    "specialTags": ["WCHR"],
+    "manifestNotes": "Assistance mobilite jusqu a la porte d embarquement."
+  },
+  "helene_r": {
+    "specialTags": ["MEDA"],
+    "manifestNotes": "Traitement medical en cabine declare au dossier."
+  },
+  "priya_s": {
+    "specialTags": ["VGML"],
+    "manifestNotes": "Repas vegetarien confirme."
+  },
+  "robin_p": {
+    "specialTags": ["PETC"],
+    "baggage": "CABIN + PETC",
+    "manifestNotes": "Animal en cabine autorise."
+  },
+  "noemi_b": {
+    "specialTags": ["UM"],
+    "manifestNotes": "Mineure non accompagnee prise en charge au comptoir."
+  },
+  "mathis_d": {
+    "specialTags": ["EXST"],
+    "baggage": "1PC HOLD + CABIN",
+    "manifestNotes": "Siege additionnel bloque sur le dossier."
+  },
+  "pauline_g": {
+    "seat": "27C"
+  }
+}

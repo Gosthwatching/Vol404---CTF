@@ -186,9 +186,39 @@ const getScanStatus = async (req, res) => {
     });
 };
 
+// GET /billets/manifests — liste des manifests disponibles
+const getManifests = async (req, res) => {
+    const manifests = await Ticket.aggregate([
+        {
+            $group: {
+                _id: '$flightCode',
+                flightCode: { $first: '$flightCode' },
+                gate: { $first: '$gate' },
+                departureTime: { $first: '$departureTime' },
+                aircraftType: { $first: '$aircraftType' },
+                aircraftRegistration: { $first: '$aircraftRegistration' },
+                destination: { $first: '$destination' },
+                passengerCount: { $sum: 1 }
+            }
+        },
+        { $sort: { flightCode: 1 } }
+    ]);
+
+    return res.json(manifests);
+};
+
 // GET /billets/passengers — liste de tous les passagers (accès libre, c'est voulu pour le CTF)
 const getAllPassengers = async (req, res) => {
-    const tickets = await Ticket.find({}).populate('userId', 'username');
+    const { flightCode } = req.query;
+    const filters = {};
+
+    if (typeof flightCode === 'string' && flightCode.trim()) {
+        filters.flightCode = flightCode.trim();
+    }
+
+    const tickets = await Ticket.find(filters)
+        .sort({ flightCode: 1, bookingRef: 1, passengerName: 1 })
+        .populate('userId', 'username');
 
     const list = tickets.map(t => ({
         passengerName: t.passengerName,
@@ -209,4 +239,4 @@ const getAllPassengers = async (req, res) => {
     return res.json(list);
 };
 
-module.exports = { getMyTicket, searchTicket, getScanStatus, getAllPassengers };
+module.exports = { getMyTicket, searchTicket, getScanStatus, getManifests, getAllPassengers };

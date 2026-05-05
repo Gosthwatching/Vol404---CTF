@@ -1,0 +1,42 @@
+[
+  {
+    "flightCode": "AF404",
+    "gate": "B12",
+    "departureTime": "14:35",
+    "destination": "Paris",
+    "aircraftType": "Airbus A320-214",
+    "aircraftRegistration": "F-HBNL"
+  },
+  {
+    "flightCode": "AF1548",
+    "gate": "C06",
+    "departureTime": "11:20",
+    "destination": "Madrid",
+    "aircraftType": "Airbus A220-300",
+    "aircraftRegistration": "F-HZUA"
+  },
+  {
+    "flightCode": "AF1219",
+    "gate": "D03",
+    "departureTime": "09:10",
+    "destination": "Amsterdam AMS",
+    "aircraftType": "Airbus A321-211",
+    "aircraftRegistration": "F-GTAJ"
+  },
+  {
+    "flightCode": "AF1832",
+    "gate": "A17",
+    "departureTime": "16:05",
+    "destination": "Rome",
+    "aircraftType": "Boeing 737-800",
+    "aircraftRegistration": "F-GZTB"
+  },
+  {
+    "flightCode": "AF1024",
+    "gate": "E09",
+    "departureTime": "19:45",
+    "destination": "Lisbon",
+    "aircraftType": "Airbus A319-111",
+    "aircraftRegistration": "F-GRHU"
+  }
+]

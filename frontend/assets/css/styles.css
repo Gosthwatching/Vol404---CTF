@@ -568,7 +568,7 @@ body.ticket-page {
 body.passengers-page {
   background: radial-gradient(circle at 20% 10%, #0f2b20 0%, #07110d 35%, #040806 100%);
   color: #d7ffe8;
-  font-family: 'Courier New', monospace;
+  font-family: 'Merriweather Sans', sans-serif;
   min-height: 100vh;
   padding: 24px 12px 40px;
 }
@@ -613,6 +613,57 @@ body.passengers-page {
 
 .flight-info span {
   white-space: nowrap;
+}
+
+.manifest-tabs {
+  margin-bottom: 14px;
+}
+
+.manifest-tabs-inner {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.manifest-tab {
+  border: 1px solid #1f5a3d;
+  border-radius: 10px;
+  background: rgba(8, 20, 14, 0.92);
+  color: #9ed4b7;
+  min-width: 160px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.manifest-tab strong {
+  display: block;
+  color: #d7ffe8;
+  letter-spacing: 0.8px;
+}
+
+.manifest-tab span {
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+.manifest-tab:hover {
+  transform: translateY(-1px);
+  border-color: #3a9368;
+}
+
+.manifest-tab.active {
+  background: rgba(18, 46, 32, 0.95);
+  border-color: #63e1a5;
+  box-shadow: 0 0 0 1px rgba(99, 225, 165, 0.25);
+}
+
+.manifest-tab:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .table-wrap {
@@ -783,6 +834,10 @@ body.passengers-page .app-footer {
   .flight-info {
     flex-direction: column;
     gap: 8px;
+  }
+
+  .manifest-tab {
+    min-width: 100%;
   }
 }
 
