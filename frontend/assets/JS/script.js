@@ -1,14 +1,15 @@
+// Script de la page accueil: anime l intro et redirige vers la connexion.
 // Monologue d intro pour le CTF
 const fakeBootData = {
   lines: [
-    ">> Initialisation du système d'embarquement.................100%",
-    ">> Système d'embarquement initialisé............100%",
+    ">> Initialisation du systeme d'embarquement.................100%",
+    ">> Systeme d'embarquement initialise............100%",
     ">> Analyse des passagers en cours.......................................100%",
-    ">> Un billet mystérieux vous attend.",
+    ">> Un billet mysterieux vous attend.",
     ">> Saurez-vous le trouver ?",
-    ">> Attention : chaque détail compte.",
-    ">> Les indices sont parfois cachés là où on ne les attend pas...",
-    ">> Prêt à relever le défi ?",
+    ">> Attention : chaque detail compte.",
+    ">> Les indices sont parfois caches la ou on ne les attend pas...",
+    ">> Pret a relever le defi ?",
     ">> Cliquez pour commencer l'aventure !"
   ]
 };
@@ -63,13 +64,13 @@ function displayNextLine() {
       setTimeout(displayNextLine, 350);
     });
   } else {
-    // Curseur clignotant à la fin
+    // Curseur clignotant a la fin
     const lastLine = codeContainer.lastElementChild;
     const cursor = document.createElement("span");
     cursor.className = "blinking-cursor";
     lastLine.appendChild(cursor);
 
-    // Clic activé seulement maintenant que tout le texte est affiché
+    // Clic active seulement maintenant que tout le texte est affiche
     loader.style.cursor = "pointer";
     loader.addEventListener("click", goToLoginWithTransition);
   }

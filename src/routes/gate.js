@@ -1,3 +1,4 @@
+﻿// Defini les routes HTTP liees au gate et au resultat de scan.
 const express = require('express');
 const router = express.Router();
 const gateController = require('../controllers/gateController');
@@ -9,3 +10,4 @@ router.get('/scan-result/:scanId', gateController.getGateFromScan);
 router.get('/:token', gateController.getGate);
 
 module.exports = router;
+

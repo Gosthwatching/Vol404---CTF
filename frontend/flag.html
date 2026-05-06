@@ -1,3 +1,4 @@
+﻿<!-- Page flag: debloquage par token puis soumission du code. -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,9 +7,50 @@
 	<title>CTF - Vol 404 | Flag</title>
 	<link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body>
+<body class="flag-page-body">
+	<main class="flag-page">
+		<section class="flag-card">
+			<h1 class="flag-title">Zone Flag Verrouillee</h1>
+			<p class="flag-subtitle">Debloquez l'acces avec un token temporaire (TTL 5 min).</p>
+
+			<h2 class="flag-subtitle-title">Etape phishing (V1 simple)</h2>
+			<p class="flag-subtitle">1) Soumets une URL interne (/phish/page/demo), 2) attends le review (~30s), 3) recupere le token.</p>
+			<div class="flag-row">
+				<input id="phish-url" type="text" placeholder="Ex: /phish/page/demo" class="flag-input flag-input-wide" />
+				<button id="btn-phish-report" type="button" class="flag-button flag-button-primary">Soumettre lien</button>
+			</div>
+			<div class="flag-row flag-row-with-margin">
+				<input id="phish-report-id" type="text" placeholder="Report ID" class="flag-input flag-input-wide" />
+				<button id="btn-phish-check" type="button" class="flag-button flag-button-success">Verifier resultat</button>
+			</div>
+			<p id="phish-msg" class="flag-message"></p>
+
+			<label for="unlock-token" class="flag-label">Token</label>
+			<div class="flag-row">
+				<input id="unlock-token" type="text" placeholder="Collez le token ici" autocomplete="off" class="flag-input flag-input-wide" />
+				<button id="btn-unlock" type="button" class="flag-button flag-button-success">Debloquer</button>
+			</div>
+			<p id="token-timer" class="flag-timer"></p>
+			<p id="unlock-msg" class="flag-message"></p>
+		</section>
+
+		<section id="flag-section" class="flag-card flag-hidden">
+			<h2 class="flag-subtitle-title">Validation Finale</h2>
+			<p class="flag-subtitle">Entrez le code du departement pour valider le flag.</p>
+
+			<div class="flag-row">
+				<input id="flag-code" type="number" placeholder="Ex: 94" class="flag-input flag-input-code" />
+				<button id="btn-submit-flag" type="button" class="flag-button flag-button-warning">Valider le code</button>
+			</div>
+			<pre id="flag-result" class="flag-result"></pre>
+		</section>
+	</main>
+
+	<script src="assets/JS/flag.js"></script>
+
 	<footer class="app-footer">
 		<p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
 	</footer>
 </body>
 </html>
+

@@ -1,3 +1,4 @@
+﻿// Gere les sessions temporaires de scan QR (creation, lecture, expiration).
 const crypto = require('crypto');
 
 const configuredTtl = Number.parseInt(process.env.SCAN_TTL_MS || '', 10);
@@ -85,3 +86,4 @@ module.exports = {
     markScanAsCompleted,
     markScanByToken
 };
+

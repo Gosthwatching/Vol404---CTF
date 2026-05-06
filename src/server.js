@@ -1,9 +1,11 @@
+﻿// Point d entree du serveur Express: configure les middlewares, routes et demarrage.
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const connectDB = require('./config/db');
+const { startPhishReviewWorker } = require('./utils/phishQueue');
 
 const app = express();
 
@@ -12,6 +14,8 @@ app.set('trust proxy', true);
 
 // Connexion MongoDB
 connectDB();
+// Lance le worker phishing V1 (review auto toutes les 30s).
+startPhishReviewWorker();
 
 // Middlewares
 app.use(express.json());
@@ -24,7 +28,7 @@ app.use(session({
     cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 } // 1h
 }));
 
-// Pages protégées — inaccessibles sans session active
+// Pages protÃ©gÃ©es â€” inaccessibles sans session active
 const pagesProtegees = ['/billet.html', '/gate.html', '/flag.html'];
 app.use((req, res, next) => {
     if (pagesProtegees.includes(req.path)) {
@@ -32,7 +36,12 @@ app.use((req, res, next) => {
             return res.redirect('/register.html');
         }
     }
-    // Bloquer l'accès direct à index.html sans session
+
+    if (req.path === '/flag.html' && !req.session.flagUnlocked) {
+        return res.redirect('/gate.html');
+    }
+
+    // Bloquer l'accÃ¨s direct Ã  index.html sans session
     if (req.path === '/index.html') {
         if (!req.session.user) return res.redirect('/register.html');
     }
@@ -47,9 +56,10 @@ app.use('/auth',    require('./routes/auth'));
 app.use('/billets', require('./routes/billets'));
 app.use('/gate',    require('./routes/gate'));
 app.use('/flag',    require('./routes/flag'));
+app.use('/phish',   require('./routes/phish'));
 app.use('/admin',   require('./routes/admin'));
 
-// Route racine → inscription si pas de session, sinon intro CTF
+// Route racine â†’ inscription si pas de session, sinon intro CTF
 app.get('/', (req, res) => {
     if (req.session.user) {
         return res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
@@ -59,5 +69,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Serveur lancé sur http://localhost:${PORT}`);
+    console.log(`Serveur lancÃ© sur http://localhost:${PORT}`);
 });

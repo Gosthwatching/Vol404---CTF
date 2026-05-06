@@ -1,3 +1,4 @@
+﻿// Gere la connexion MongoDB principale pour l application.
 const mongoose = require('mongoose');
 const { getMongoConnectionCandidates } = require('./mongoConnection');
 
@@ -5,7 +6,7 @@ const connectDB = async () => {
     try {
         // Keep NoSQL operator payloads functional for the CTF lab scenario.
         mongoose.set('sanitizeFilter', false);
-        console.log('✓ Mongoose sanitizeFilter disabled - NoSQL payloads allowed');
+        console.log('âœ“ Mongoose sanitizeFilter disabled - NoSQL payloads allowed');
 
         const mongoCandidates = getMongoConnectionCandidates();
 
@@ -18,7 +19,7 @@ const connectDB = async () => {
         for (const mongoUri of mongoCandidates) {
             try {
                 await mongoose.connect(mongoUri);
-                console.log('MongoDB connecté :', mongoUri);
+                console.log('MongoDB connectÃ© :', mongoUri);
                 return;
             } catch (err) {
                 lastError = err;
@@ -33,3 +34,4 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
+

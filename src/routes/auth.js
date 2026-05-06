@@ -1,3 +1,4 @@
+﻿// Defini les routes HTTP liees a l authentification.
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');

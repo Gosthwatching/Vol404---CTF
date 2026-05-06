@@ -36,13 +36,13 @@
 }
 
 
-/* Animation de fondu à la fin */
+/* Animation de fondu a la fin */
 #loader.fade-out {
   opacity: 0;
   pointer-events: none;
 }
 
-/* Scanlines rétro CRT */
+/* Scanlines retro CRT */
 #loader::after {
   content: "";
   position: absolute;
@@ -871,6 +871,121 @@ body.passengers-page .app-footer {
 }
 
 /* =========================================================
+  flag.html
+  ========================================================= */
+body.flag-page-body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #163252 0%, #07101b 52%, #050a11 100%);
+  color: #f4f6fb;
+}
+
+.flag-page {
+  max-width: 760px;
+  margin: 3rem auto;
+  padding: 1.25rem;
+}
+
+.flag-card {
+  background: rgba(9, 14, 22, 0.82);
+  border: 1px solid rgba(120, 180, 255, 0.28);
+  border-radius: 14px;
+  padding: 1rem 1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.flag-hidden {
+  display: none;
+}
+
+.flag-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.35rem;
+}
+
+.flag-subtitle-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.flag-subtitle {
+  margin: 0 0 0.9rem;
+  opacity: 0.9;
+}
+
+.flag-label {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.flag-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.flag-row-with-margin {
+  margin-bottom: 0.8rem;
+}
+
+.flag-timer {
+  align-self: center;
+  opacity: 0.86;
+}
+
+.flag-input {
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #3a4a66;
+  background: #101925;
+  color: #fff;
+}
+
+.flag-input-wide {
+  flex: 1 1 320px;
+}
+
+.flag-input-code {
+  flex: 1 1 140px;
+}
+
+.flag-button {
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.flag-button-primary {
+  border: 1px solid #5f8cff;
+  background: #1f4fff;
+}
+
+.flag-button-success {
+  border: 1px solid #20b266;
+  background: #15924f;
+}
+
+.flag-button-warning {
+  border: 1px solid #d1a41a;
+  background: #b18406;
+}
+
+.flag-message {
+  margin: 0.75rem 0 0;
+  min-height: 1.2rem;
+}
+
+.flag-result {
+  margin-top: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #0a111a;
+  border: 1px solid #253247;
+  color: #b6ffe1;
+  white-space: pre-wrap;
+}
+
+/* =========================================================
   responsive (login.html / home.html / reservation.html /
   billet.html / passengers.html)
   ========================================================= */
@@ -914,6 +1029,11 @@ body.passengers-page .app-footer {
   .app-footer {
     position: static;
     margin-top: 28px;
+  }
+
+  .flag-page {
+    margin: 1.6rem auto;
+    padding: 0.9rem;
   }
 }
 
@@ -982,6 +1102,18 @@ body.passengers-page .app-footer {
   .home-section p {
     font-size: 0.9rem;
     line-height: 1.6;
+  }
+
+  .flag-title {
+    font-size: 1.16rem;
+  }
+
+  .flag-subtitle-title {
+    font-size: 1.04rem;
+  }
+
+  .flag-button {
+    width: 100%;
   }
 
   /* Ticket */

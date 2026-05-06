@@ -1,3 +1,4 @@
+﻿// Controleur gate: renvoie les informations gate selon token/scan.
 const Ticket = require('../models/Billet');
 const { vigenereEncode } = require('../utils/vigenere');
 const { getScanSession, markScanAsCompleted, markScanByToken } = require('../utils/scanSessions');
@@ -27,7 +28,7 @@ const getGate = async (req, res) => {
     return res.json(buildGatePayload(ticket));
 };
 
-// GET /gate/scan/:scanId — appelé par le téléphone via QR
+// GET /gate/scan/:scanId â€” appelÃ© par le tÃ©lÃ©phone via QR
 const scanGate = async (req, res) => {
     const { scanId } = req.params;
     const tokenHint = typeof req.query.token === 'string' ? req.query.token.trim() : '';
@@ -55,7 +56,7 @@ const scanGate = async (req, res) => {
     return res.json(buildGatePayload(ticket));
 };
 
-// GET /gate/scan-result/:scanId — ouvert automatiquement sur PC après scan valide
+// GET /gate/scan-result/:scanId â€” ouvert automatiquement sur PC aprÃ¨s scan valide
 const getGateFromScan = async (req, res) => {
     const { scanId } = req.params;
     const session = getScanSession(scanId);

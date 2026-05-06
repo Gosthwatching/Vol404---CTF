@@ -201,3 +201,27 @@ CTF{ORY_boarding_complete}
 
 ## idée possible pour finir le storytelling
 on pourrait faire de la gestion de token avec un truc en mode ils ont telle temps pour pouvoir le valider et pour récuperer le token il devraient faire du fishing
+
+
+réponses IA : 
+Ce qui est pédagogiquement fort :
+
+XSS → phishing est une vraie chaîne d'attaque réaliste (OWASP A3/A7)
+Vous avez déjà la condition XSS dans le CTF (step 3), mais elle ne fait que alert(1). La rendre fonctionnelle (vol de token) c'est l'étape logique suivante
+Le time limit ajoute de la pression et simule un vrai scénario
+Le gros problème technique :
+Pour simuler une victime qui "clique" sur le lien de phishing, il faut soit :
+
+Un bot headless (Puppeteer) qui visite l'URL soumise → complexe, ressources Docker
+Un endpoint serveur qui simule le clic côté backend → plus simple mais moins réaliste
+Un vrai complice (le prof joue la victime manuellement) → pédagogique mais fragile en conditions réelles
+Sans ça, les étudiants soumettent un lien... dans le vide. Ça ne fonctionne pas.
+
+Une version réaliste et faisable pour votre stack :
+
+Une route /admin/review — le "modérateur" visite automatiquement les billets signalés toutes les 30s (cron job serveur, pas de headless browser)
+Le stored XSS sur le champ username (déjà en place) exfiltre le cookie/token du modérateur vers une URL contrôlée par l'étudiant
+Le token récupéré est à usage unique avec TTL de 5 minutes
+Ce token donne accès à /cockpit
+C'est faisable sans Puppeteer — le serveur simule lui-même la "visite" du modérateur en executant le payload XSS côté serveur via un parser HTML minimaliste.
+

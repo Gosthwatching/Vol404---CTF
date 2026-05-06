@@ -1,9 +1,10 @@
+<!-- Page classement des participants. -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>CTF Vol 404 — Suivi élèves</title>
+	<title>CTF Vol 404 â€” Suivi Ã©lÃ¨ves</title>
 	<link rel="stylesheet" href="assets/css/styles.css">
 	<style>
 		body { background: #0a0e1a; color: #c9d1d9; font-family: 'Courier New', monospace; padding: 2rem; }
@@ -41,31 +42,31 @@
 	</style>
 </head>
 <body>
-	<h1>✈ Vol 404 — Suivi des élèves</h1>
-	<p class="subtitle">Tableau de progression CTF — accès professeur</p>
+	<h1>âœˆ Vol 404 â€” Suivi des Ã©lÃ¨ves</h1>
+	<p class="subtitle">Tableau de progression CTF â€” accÃ¨s professeur</p>
 
 	<div id="key-form-wrapper">
 		<form id="key-form">
-			<input type="password" id="prof-key" placeholder="Clé professeur" required>
-			<button type="submit">Accéder</button>
+			<input type="password" id="prof-key" placeholder="ClÃ© professeur" required>
+			<button type="submit">AccÃ©der</button>
 		</form>
 		<p id="error"></p>
 	</div>
 
 	<div id="board" style="display:none">
 		<p id="stats"></p>
-		<button id="refresh">↻ Rafraîchir</button>
+		<button id="refresh">â†» RafraÃ®chir</button>
 		<table>
 			<thead>
 				<tr>
 					<th class="rank">#</th>
-					<th>Élève</th>
+					<th>Ã‰lÃ¨ve</th>
 					<th class="score">Score</th>
 					<th>Connexion</th>
 					<th>XSS</th>
 					<th>NoSQL</th>
 					<th>Logs admin</th>
-					<th>Flag trouvé</th>
+					<th>Flag trouvÃ©</th>
 					<th>Heure du flag</th>
 				</tr>
 			</thead>
@@ -77,20 +78,20 @@
 		let savedKey = '';
 
 		function fmt(isoDate) {
-			if (!isoDate) return '—';
+			if (!isoDate) return 'â€”';
 			const d = new Date(isoDate);
 			return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 		}
 
 		function cell(val) {
 			return val
-				? '<td class="check">✔</td>'
-				: '<td class="cross">—</td>';
+				? '<td class="check">âœ”</td>'
+				: '<td class="cross">â€”</td>';
 		}
 
 		async function load(key) {
 			const res = await fetch(`/admin/leaderboard?key=${encodeURIComponent(key)}`);
-			if (res.status === 403 || res.status === 401) throw new Error('Clé incorrecte.');
+			if (res.status === 403 || res.status === 401) throw new Error('ClÃ© incorrecte.');
 			if (!res.ok) throw new Error('Erreur serveur.');
 			return res.json();
 		}
@@ -98,7 +99,7 @@
 		async function render(key) {
 			const data = await load(key);
 			document.getElementById('stats').textContent =
-				`${data.total} élève(s) inscrit(s) — ${data.leaderboard.filter(u => u.steps['Flag trouvé']).length} flag(s) trouvé(s)`;
+				`${data.total} Ã©lÃ¨ve(s) inscrit(s) â€” ${data.leaderboard.filter(u => u.steps['Flag trouvÃ©']).length} flag(s) trouvÃ©(s)`;
 
 			const rows = data.leaderboard.map(u => `
 				<tr>
@@ -109,11 +110,11 @@
 					${cell(u.steps['XSS'])}
 					${cell(u.steps['NoSQL Injection'])}
 					${cell(u.steps['Logs admin'])}
-					${cell(u.steps['Flag trouvé'])}
+					${cell(u.steps['Flag trouvÃ©'])}
 					<td class="flag-time">${fmt(u.flagFoundAt)}</td>
 				</tr>
 			`).join('');
-			document.getElementById('rows').innerHTML = rows || '<tr><td colspan="9" style="color:#8b949e;text-align:center">Aucun élève inscrit</td></tr>';
+			document.getElementById('rows').innerHTML = rows || '<tr><td colspan="9" style="color:#8b949e;text-align:center">Aucun Ã©lÃ¨ve inscrit</td></tr>';
 		}
 
 		document.getElementById('key-form').addEventListener('submit', async (e) => {

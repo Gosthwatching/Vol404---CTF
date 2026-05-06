@@ -1,3 +1,4 @@
+﻿// Utilitaire de connexion MongoDB (utilise par les scripts/outils du projet).
 const fs = require('fs');
 
 const LOCAL_HOSTS = ['127.0.0.1', 'localhost'];

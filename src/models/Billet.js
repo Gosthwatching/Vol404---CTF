@@ -1,3 +1,4 @@
+﻿// Modele Mongoose billet: donnees de vol, passager et token QR.
 const mongoose = require('mongoose');
 
 const ticketSchema = new mongoose.Schema({
@@ -66,3 +67,4 @@ const ticketSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Ticket', ticketSchema);
+
