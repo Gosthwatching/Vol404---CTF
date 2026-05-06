@@ -3,7 +3,7 @@ const User = require('../models/User');
 const { consumePhishToken } = require('../utils/phishQueue');
 
 const airports = {
-    94: "ORY",   // Val-de-Marne â†’ Paris-Orly
+    94: "ORY",   // Val-de-Marne �?' Paris-Orly
     13: "MRS",   // Marseille
     69: "LYS",   // Lyon
     75: "CDG",   // Paris CDG
@@ -49,10 +49,10 @@ const checkFlag = async (req, res) => {
     }
 
     if (!dep || !airports[dep]) {
-        return res.status(400).json({ error: "Mauvaise rÃ©ponse." });
+        return res.status(400).json({ error: "Mauvaise réponse." });
     }
 
-    // Marquer flagFound pour l'Ã©lÃ¨ve connectÃ©
+    // Marquer flagFound pour l'élève connecté
     if (req.session?.user) {
         await User.updateOne(
             { _id: req.session.user.id, 'progress.flagFound': { $ne: true } },

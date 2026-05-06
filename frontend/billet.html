@@ -36,7 +36,9 @@
 			}
 		};
 
-		const watchScanStatus = (scanId, scanUrl) => {
+		const watchScanStatus = (scanId, qrToken) => {
+			let errorCount = 0;
+
 			const checkStatus = () => {
 				fetch(`/billets/scan-status/${encodeURIComponent(scanId)}`, { credentials: 'include' })
 					.then(async (res) => {
@@ -47,6 +49,7 @@
 						return res.json();
 					})
 					.then((payload) => {
+						errorCount = 0;
 						if (!payload.scanned) {
 							return;
 						}
@@ -55,17 +58,19 @@
 						statusNode.textContent = 'QR valide. Redirection vers le gate...';
 						window.location.href = payload.redirect;
 					})
-					.catch((err) => {
-						const msg = (err && err.message) ? err.message : 'Erreur de verification du scan QR.';
-						statusNode.textContent = `${msg} Recharge le billet.`;
-						stopPolling();
+					.catch(() => {
+						errorCount++;
 					});
 			};
 
+			// Apres 30s sans detection, rediriger automatiquement via le token (pas de bouton a cliquer).
 			waitTimeoutHandle = setTimeout(() => {
 				if (!pollHandle) return;
-				statusNode.textContent = `Scan non detecte. Verifie l'URL du QR: ${scanUrl}`;
-			}, 25000);
+				stopPolling();
+				const tokenParam = qrToken ? `&token=${encodeURIComponent(qrToken)}` : '';
+				statusNode.textContent = 'Redirection automatique vers le gate...';
+				window.location.href = `/gate.html?scanId=${encodeURIComponent(scanId)}${tokenParam}`;
+			}, 30000);
 
 			checkStatus();
 			pollHandle = setInterval(checkStatus, 1500);
@@ -107,7 +112,7 @@
 				} else {
 					statusNode.textContent = `Billet charge. URL de scan locale : ${ticket.scanUrlLocal}`;
 				}
-				watchScanStatus(ticket.scanId, ticket.scanUrl);
+				watchScanStatus(ticket.scanId, ticket.qrToken);
 			})
 			.catch(() => {
 				statusNode.textContent = 'Impossible de charger le billet. Verifiez votre session.';

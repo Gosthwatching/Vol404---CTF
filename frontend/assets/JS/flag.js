@@ -1,15 +1,11 @@
-﻿// Script page flag: token temporaire, debloquage et soumission du code.
-const btnUnlock = document.getElementById('btn-unlock');
+﻿// Script page flag: verification phishing puis unlock via console.
 const btnSubmitFlag = document.getElementById('btn-submit-flag');
-const tokenInput = document.getElementById('unlock-token');
 const unlockMsg = document.getElementById('unlock-msg');
 const flagSection = document.getElementById('flag-section');
 const timerNode = document.getElementById('token-timer');
 const flagCodeInput = document.getElementById('flag-code');
 const flagResultNode = document.getElementById('flag-result');
-const phishUrlInput = document.getElementById('phish-url');
 const phishReportIdInput = document.getElementById('phish-report-id');
-const btnPhishReport = document.getElementById('btn-phish-report');
 const btnPhishCheck = document.getElementById('btn-phish-check');
 const phishMsg = document.getElementById('phish-msg');
 
@@ -52,32 +48,7 @@ const refreshStatus = async () => {
     flagSection.style.display = data.unlocked ? '' : 'none';
 };
 
-// Etape 1: le joueur soumet son lien phishing au moderateur.
-btnPhishReport.addEventListener('click', async () => {
-    const url = String(phishUrlInput.value || '').trim();
-    if (!url) {
-        showPhishMessage('Entrez une URL avant envoi.');
-        return;
-    }
-
-    const res = await fetch('/phish/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ url })
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-        showPhishMessage(data.error || 'Impossible de soumettre le lien.');
-        return;
-    }
-
-    phishReportIdInput.value = data.reportId;
-    showPhishMessage('Lien soumis. Attends ~30s puis clique sur Verifier resultat.', true);
-});
-
-// Etape 2: le joueur recupere le resultat du review et le token.
+// Etape: le joueur recupere le resultat du review et le token.
 btnPhishCheck.addEventListener('click', async () => {
     const reportId = String(phishReportIdInput.value || '').trim();
     if (!reportId) {
@@ -110,35 +81,12 @@ btnPhishCheck.addEventListener('click', async () => {
         return;
     }
 
-    tokenInput.value = data.token;
+    window._phishToken = data.token;
     if (data.expiresAt) {
         setCountdown(data.expiresAt);
     }
-    showPhishMessage('Token recupere. Passe a Debloquer.', true);
-});
-
-btnUnlock.addEventListener('click', async () => {
-    const token = tokenInput.value.trim();
-    if (!token) {
-        showUnlockMessage('Collez un token avant de debloquer.');
-        return;
-    }
-
-    const res = await fetch('/flag/unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ token })
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-        showUnlockMessage(data.error || 'Token refuse.');
-        return;
-    }
-
-    showUnlockMessage('Acces debloque. Vous pouvez valider le flag.', true);
-    flagSection.style.display = '';
+    showPhishMessage('Token recupere. Utilise window._phishToken dans la console pour /flag/unlock.', true);
+    showUnlockMessage('Deblocage manuel requis en console avant la validation finale.');
 });
 
 btnSubmitFlag.addEventListener('click', async () => {

@@ -6,8 +6,26 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>CTF - Vol 404 | Gate</title>
 	<link rel="stylesheet" href="assets/css/styles.css">
+	<script src="assets/JS/gate.js" defer></script>
 </head>
-<body>
+
+<body class="flag-page-body">
+	<main class="flag-page">
+		<section class="flag-card">
+			<h1 class="flag-title">Passage Gate Confirme</h1>
+			<p class="flag-subtitle" id="gate-summary">Lecture des donnees gate en cours...</p>
+			<pre id="gate-payload" class="flag-result">Chargement...</pre>
+		</section>
+
+		<section class="flag-card">
+			<h2 class="flag-subtitle-title">Note Supervision AF404</h2>
+			<p class="flag-subtitle" id="gate-ops-note">Chargement de la consigne interne...</p>
+			<p class="flag-subtitle" id="gate-next-step"></p>
+			<a href="/flag.html" class="flag-button flag-button-primary gate-link">Ouvrir le portail de validation</a>
+		</section>
+	</main>
+
+	
 	<footer class="app-footer">
 		<p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
 	</footer>

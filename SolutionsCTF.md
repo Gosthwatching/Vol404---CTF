@@ -71,7 +71,43 @@ Important:
 2. Le scan ouvre `/gate/scan/<scanId>` sur le telephone
 3. Le PC est redirige automatiquement vers `/gate/scan-result/<scanId>`
 
-### 7) Soumettre le code final
+Transition storytelling:
+
+Le scan doit etre compris comme un point de bascule dans le scenario. L'etudiant a franchi la barriere technique cote embarquement, mais il tombe maintenant sur une couche de validation plus "humaine".
+
+Message in-universe possible a faire lire ou ressentir aux etudiants:
+
+> Note interne AF404 - Supervision escale
+>
+> Le controle QR confirme l'acces a la zone gate, mais l'ouverture de la zone finale reste soumise a validation manuelle par un agent habilite. En cas d'incident, transmettre un lien de verification au poste de supervision afin d'obtenir un jeton temporaire d'override.
+
+Autrement dit: le QR prouve qu'ils sont arrives au bon endroit, mais il ne suffit plus de "casser" une route. La suite logique consiste a viser le workflow de validation et a obtenir un token temporaire via le module phishing.
+
+### 7) Phishing : soumettre le lien et recuperer le token
+
+Soumettre une URL qui commence par `/phish/page/` :
+
+```powershell
+$report = Invoke-RestMethod -Uri 'http://localhost:3000/phish/report' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ url = '/phish/page/alice' } | ConvertTo-Json)
+$reportId = $report.reportId
+$reportId
+```
+
+Attendre ~30 secondes le passage du worker, puis recuperer le token :
+
+```powershell
+$result = Invoke-RestMethod -Uri "http://localhost:3000/phish/result/$reportId" -WebSession $session
+$result
+$phishToken = $result.token
+```
+
+Debloquer la page flag avec le token (usage unique, valide 5 min) :
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:3000/flag/unlock' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ token = $phishToken } | ConvertTo-Json)
+```
+
+### 8) Soumettre le code final
 
 ```powershell
 $flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
@@ -154,16 +190,42 @@ Le JSON gate ressemble a:
 {"gate":"B7","flightCode":"AF404","message":"RVN","hint":"QTH Locator : JN18ER","indice":"La cle survole la banlieue parisienne..."}
 ```
 
-### 6) Envoyer le code final depuis le navigateur
+Transition storytelling:
 
-Dans DevTools Console:
+Le QR et le JSON gate servent de pivot narratif. L'etudiant comprend qu'il a reussi l'intrusion technique cote embarquement, mais que la zone finale reste verrouillee par un mecanisme distinct. Le jeu doit donc lui faire sentir qu'il faut changer d'approche: apres l'exploitation technique, place a la manipulation du workflow humain. C'est ce qui justifie l'etape suivante de phishing pour obtenir le token de deverrouillage.
+
+### 6) Phishing : entrainement console + verification sur flag.html
+
+Dans DevTools Console sur n'importe quelle page (session active requise), soumettre d'abord le report phishing :
 
 ```javascript
-fetch('/flag', {
+fetch('/phish/report', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   credentials: 'include',
-  body: JSON.stringify({ code: 94 })
+  body: JSON.stringify({ url: '/phish/page/alice' })
+})
+  .then(r => r.json())
+  .then(data => { console.log(data); window._reportId = data.reportId; });
+```
+
+Ensuite :
+
+1. Ouvrir http://localhost:3000/flag.html
+2. Coller `window._reportId` dans le champ Report ID
+3. Cliquer sur **Verifier resultat**
+4. Si `pending`, patienter et recliquer
+
+Quand la verification reussit, le token est stocke dans `window._phishToken`.
+
+Debloquer alors en console (obligatoire, pas de bouton UI) :
+
+```javascript
+fetch('/flag/unlock', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ token: window._phishToken })
 })
   .then(r => r.json())
   .then(console.log);

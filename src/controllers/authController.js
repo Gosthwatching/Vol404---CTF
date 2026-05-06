@@ -25,11 +25,11 @@ const isLikelyNoSqlInjection = (value) => {
 };
 
 // POST /auth/login
-// âš ï¸ CTF â€” FAILLES INTENTIONNELLES :
-//   1. NoSQL Injection : password est passÃ© tel quel dans la requÃªte Mongoose
-//      â†’ payload : { "username": "alice", "password": { "$ne": "" } }
-//   2. XSS rÃ©flÃ©chi  : le username est inclus sans Ã©chappement dans le message d'erreur
-//      â†’ payload username : <img src=x onerror=alert(document.cookie)>
+// �s�️ CTF �?" FAILLES INTENTIONNELLES :
+//   1. NoSQL Injection : password est passé tel quel dans la requête Mongoose
+//      �?' payload : { "username": "alice", "password": { "$ne": "" } }
+//   2. XSS réfléchi  : le username est inclus sans échappement dans le message d'erreur
+//      �?' payload username : <img src=x onerror=alert(document.cookie)>
 const login = async (req, res) => {
     const { username, password } = req.body;
     const progress = ensureAttackProgress(req);
@@ -46,7 +46,7 @@ const login = async (req, res) => {
         return res.status(400).json({ message: 'Champs manquants.' });
     }
 
-    // FAILLE NoSQL : passwordClear est comparÃ© sans valider que password est bien une string
+    // FAILLE NoSQL : passwordClear est comparé sans valider que password est bien une string
     // Un attaquant peut envoyer { "password": { "$ne": "" } } pour contourner l'auth
     const user = await User.findOne({ username: username, passwordClear: password });
 
@@ -80,7 +80,7 @@ const login = async (req, res) => {
 };
 
 // GET /auth/logs
-// L'accÃ¨s aux logs admin est dÃ©bloquÃ© uniquement si les 2 injections ont Ã©tÃ© tentÃ©es
+// L'accès aux logs admin est débloqué uniquement si les 2 injections ont été tentées
 const logs = async (req, res) => {
     const progress = ensureAttackProgress(req);
     if (!progress.xssDone || !progress.nosqlDone) {
@@ -95,7 +95,7 @@ const logs = async (req, res) => {
         return res.status(404).json({ error: 'Utilisateur admin introuvable.' });
     }
 
-    // Marquer logsAccessed pour l'Ã©lÃ¨ve connectÃ©
+    // Marquer logsAccessed pour l'élève connecté
     if (req.session.user) {
         await User.updateOne(
             { _id: req.session.user.id },
@@ -122,7 +122,7 @@ const logout = (req, res) => {
 // GET /auth/me
 const me = (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({ error: 'Non connectÃ©.' });
+        return res.status(401).json({ error: 'Non connecté.' });
     }
     return res.json(req.session.user);
 };
@@ -163,7 +163,7 @@ const register = async (req, res) => {
     return res.status(201).json({ success: true });
 };
 
-// POST /auth/student-login  (connexion sÃ©curisÃ©e â€” mot de passe hachÃ©)
+// POST /auth/student-login  (connexion sécurisée �?" mot de passe haché)
 const studentLogin = async (req, res) => {
     const { username, password } = req.body;
 

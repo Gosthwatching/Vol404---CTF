@@ -1,16 +1,16 @@
 ﻿// Controleur leaderboard: Calcule et expose le classement des participants.
 const User = require('../models/User');
 
-// Ã‰tapes CTF dans l'ordre chronologique
+// �?tapes CTF dans l'ordre chronologique
 const STEPS = [
     { key: 'loggedIn',     label: 'Connexion' },
     { key: 'xssDone',      label: 'XSS' },
     { key: 'nosqlDone',    label: 'NoSQL Injection' },
     { key: 'logsAccessed', label: 'Logs admin' },
-    { key: 'flagFound',    label: 'Flag trouvÃ©' }
+    { key: 'flagFound',    label: 'Flag trouvé' }
 ];
 
-// Calcule un score (nombre d'Ã©tapes validÃ©es)
+// Calcule un score (nombre d'étapes validées)
 const scoreOf = (progress = {}) =>
     STEPS.filter(s => progress[s.key]).length;
 
@@ -32,7 +32,7 @@ const getLeaderboard = async (req, res) => {
             )
         }))
         .sort((a, b) => {
-            // Tri : score dÃ©croissant, puis heure de flag croissante (premier arrivÃ©)
+            // Tri : score décroissant, puis heure de flag croissante (premier arrivé)
             if (b.score !== a.score) return b.score - a.score;
             if (a.flagFoundAt && b.flagFoundAt) return new Date(a.flagFoundAt) - new Date(b.flagFoundAt);
             if (a.flagFoundAt) return -1;

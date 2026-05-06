@@ -12,7 +12,12 @@ const buildGatePayload = (ticket) => {
         flightCode: ticket.flightCode,
         message: encoded,
         hint: 'QTH Locator : JN18ER',
-        indice: 'La cle survole la banlieue parisienne...'
+        indice: 'La cle survole la banlieue parisienne...',
+        opsNote: 'Acces gate confirme. Zone finale toujours verrouillee.',
+        validationRequired: true,
+        validationMethod: 'Validation manuelle requise via jeton temporaire d override.',
+        validationPortal: '/flag.html',
+        nextStep: 'Ouvrez le portail flag pour lancer la procedure de verification interne.'
     };
 };
 
@@ -28,7 +33,7 @@ const getGate = async (req, res) => {
     return res.json(buildGatePayload(ticket));
 };
 
-// GET /gate/scan/:scanId â€” appelÃ© par le tÃ©lÃ©phone via QR
+// GET /gate/scan/:scanId �?" appelé par le téléphone via QR
 const scanGate = async (req, res) => {
     const { scanId } = req.params;
     const tokenHint = typeof req.query.token === 'string' ? req.query.token.trim() : '';
@@ -56,7 +61,7 @@ const scanGate = async (req, res) => {
     return res.json(buildGatePayload(ticket));
 };
 
-// GET /gate/scan-result/:scanId â€” ouvert automatiquement sur PC aprÃ¨s scan valide
+// GET /gate/scan-result/:scanId �?" ouvert automatiquement sur PC après scan valide
 const getGateFromScan = async (req, res) => {
     const { scanId } = req.params;
     const session = getScanSession(scanId);

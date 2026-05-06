@@ -4,6 +4,20 @@
 
 3 --> utiliser QR code pour aller sur le "gate"
 
+Transition storytelling possible entre 3 et la suite:
+
+Le QR ne doit pas donner directement la recompense finale. Il doit plutot servir de preuve d'intrusion reussie sur la partie embarquement. Ensuite, il faut faire sentir aux etudiants qu'ils arrivent sur une couche differente: non plus une faille purement technique, mais une validation operationnelle tenue par un humain ou un service interne.
+
+Version plus immersive:
+
+> Alerte interne - cellule supervision AF404
+>
+> Passage gate confirme. Donnees d'acces secondaires detectees.
+> L'ouverture de la zone finale necessite un jeton temporaire emis par validation superviseur.
+> Procedure exception: transmettre un lien de verification au poste de controle pour emission d'un token d'override.
+
+Avec ce type de message, l'etudiant comprend naturellement que la suite n'est plus "je casse encore une route", mais "je manipule un processus interne". C'est ce qui rend l'etape phishing logique dans le recit.
+
 4 --> décryptage / déchiffrement type césar ou VIGENÈRE avec QTH LOCATOR
 
 5 --> Flag + césar ou modulo pour le département qui donne = nom de la destination ou de l'aréoport

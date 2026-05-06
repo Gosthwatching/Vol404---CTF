@@ -28,7 +28,7 @@ app.use(session({
     cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 } // 1h
 }));
 
-// Pages protÃ©gÃ©es â€” inaccessibles sans session active
+// Pages protégées �?" inaccessibles sans session active
 const pagesProtegees = ['/billet.html', '/gate.html', '/flag.html'];
 app.use((req, res, next) => {
     if (pagesProtegees.includes(req.path)) {
@@ -37,11 +37,7 @@ app.use((req, res, next) => {
         }
     }
 
-    if (req.path === '/flag.html' && !req.session.flagUnlocked) {
-        return res.redirect('/gate.html');
-    }
-
-    // Bloquer l'accÃ¨s direct Ã  index.html sans session
+    // Bloquer l'accès direct à index.html sans session
     if (req.path === '/index.html') {
         if (!req.session.user) return res.redirect('/register.html');
     }
@@ -59,7 +55,7 @@ app.use('/flag',    require('./routes/flag'));
 app.use('/phish',   require('./routes/phish'));
 app.use('/admin',   require('./routes/admin'));
 
-// Route racine â†’ inscription si pas de session, sinon intro CTF
+// Route racine �?' inscription si pas de session, sinon intro CTF
 app.get('/', (req, res) => {
     if (req.session.user) {
         return res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
@@ -69,5 +65,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Serveur lancÃ© sur http://localhost:${PORT}`);
+    console.log(`Serveur lancé sur http://localhost:${PORT}`);
 });

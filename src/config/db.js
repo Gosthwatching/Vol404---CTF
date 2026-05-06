@@ -6,7 +6,7 @@ const connectDB = async () => {
     try {
         // Keep NoSQL operator payloads functional for the CTF lab scenario.
         mongoose.set('sanitizeFilter', false);
-        console.log('âœ“ Mongoose sanitizeFilter disabled - NoSQL payloads allowed');
+        console.log('�o" Mongoose sanitizeFilter disabled - NoSQL payloads allowed');
 
         const mongoCandidates = getMongoConnectionCandidates();
 
@@ -19,7 +19,7 @@ const connectDB = async () => {
         for (const mongoUri of mongoCandidates) {
             try {
                 await mongoose.connect(mongoUri);
-                console.log('MongoDB connectÃ© :', mongoUri);
+                console.log('MongoDB connecté :', mongoUri);
                 return;
             } catch (err) {
                 lastError = err;

@@ -32,7 +32,7 @@ const isNonPublicHost = (host) => {
     const h = String(host || '');
     // localhost / loopback
     if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(h)) return true;
-    // Docker bridge IPs (172.16-31.x) â€” not reachable from outside the host
+    // Docker bridge IPs (172.16-31.x) �?" not reachable from outside the host
     if (/^172\.(1[6-9]|2\d|3[0-1])\./i.test(h)) return true;
     return false;
 };
@@ -113,6 +113,7 @@ const buildTicketResponse = async (ticket, scanUrls, scanId) => {
         departureTime: ticket.departureTime,
         cabinClass: ticket.cabinClass || 'Economy',
         bookingRef: ticket.bookingRef || '',
+        qrToken: ticket.qrToken,
         destination: ticket.destination || '',
         scanId,
         scanUrl: scanUrls.scanUrl,
@@ -122,12 +123,12 @@ const buildTicketResponse = async (ticket, scanUrls, scanId) => {
     };
 };
 
-// GET /tickets/my â€” billet de l'utilisateur connectÃ©
+// GET /tickets/my �?" billet de l'utilisateur connecté
 const getMyTicket = async (req, res) => {
     const ticket = await Ticket.findOne({ userId: req.session.user.id });
 
     if (!ticket) {
-        return res.status(404).json({ error: 'Aucun billet trouvÃ©.' });
+        return res.status(404).json({ error: 'Aucun billet trouvé.' });
     }
 
     const scanId = createScanSession({
@@ -140,7 +141,7 @@ const getMyTicket = async (req, res) => {
     return res.json(response);
 };
 
-// POST /tickets/search â€” âš ï¸ FAILLE INTENTIONNELLE NoSQL Injection
+// POST /tickets/search �?" �s�️ FAILLE INTENTIONNELLE NoSQL Injection
 
 const searchTicket = async (req, res) => {
     const { username } = req.body;
@@ -152,7 +153,7 @@ const searchTicket = async (req, res) => {
     const user = await User.findOne({ username: username });
 
     if (!user) {
-        return res.status(404).json({ error: 'Utilisateur non trouvÃ©.' });
+        return res.status(404).json({ error: 'Utilisateur non trouvé.' });
     }
 
     const ticket = await Ticket.findOne({ userId: user._id });
@@ -171,7 +172,7 @@ const searchTicket = async (req, res) => {
     return res.json(response);
 };
 
-// GET /billets/scan-status/:scanId â€” polling cÃ´tÃ© PC pour vÃ©rifier le scan QR
+// GET /billets/scan-status/:scanId �?" polling côté PC pour vérifier le scan QR
 const getScanStatus = async (req, res) => {
     const { scanId } = req.params;
     const session = getScanSession(scanId);
@@ -188,11 +189,11 @@ const getScanStatus = async (req, res) => {
 
     return res.json({
         scanned: true,
-        redirect: `/gate/scan-result/${scanId}`
+        redirect: `/gate.html?scanId=${encodeURIComponent(scanId)}&token=${encodeURIComponent(session.ticketToken)}`
     });
 };
 
-// GET /billets/manifests â€” liste des manifests disponibles
+// GET /billets/manifests �?" liste des manifests disponibles
 const getManifests = async (req, res) => {
     const manifests = await Ticket.aggregate([
         {
@@ -213,7 +214,7 @@ const getManifests = async (req, res) => {
     return res.json(manifests);
 };
 
-// GET /billets/passengers â€” liste de tous les passagers (accÃ¨s libre, c'est voulu pour le CTF)
+// GET /billets/passengers �?" liste de tous les passagers (accès libre, c'est voulu pour le CTF)
 const getAllPassengers = async (req, res) => {
     const { flightCode } = req.query;
     const filters = {};
@@ -234,7 +235,7 @@ const getAllPassengers = async (req, res) => {
         departureTime: t.departureTime,
         aircraftType: t.aircraftType,
         aircraftRegistration: t.aircraftRegistration,
-        username: t.userId ? t.userId.username : 'â€”',
+        username: t.userId ? t.userId.username : '�?"',
         cabinClass: t.cabinClass,
         bookingRef: t.bookingRef,
         baggage: t.baggage,

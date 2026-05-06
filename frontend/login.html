@@ -1,4 +1,4 @@
-<!-- Page connexion CTF (version challenge). -->
+﻿<!-- Page connexion CTF (version challenge). -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9,9 +9,9 @@
 </head>
 <body class="login-page">
     <div class="login-wrapper">
-        <div class="airline-logo">âœˆ</div>
-        <h1>Air France â€” Vol 404</h1>
-        <p class="subtitle">Espace passager â€” Authentification requise</p>
+        <div class="airline-logo">&#9992;&#65039;</div>
+        <h1>Air France - Vol 404</h1>
+        <p class="subtitle">Espace passager - Authentification requise</p>
 
         <form id="login-form" autocomplete="off">
             <input type="text" class="login-autofill-trap" autocomplete="username" tabindex="-1" aria-hidden="true">
@@ -21,7 +21,7 @@
             <input type="text" id="username" data-field-name="af404_user" placeholder="ex : Tyler" autocomplete="off" readonly required>
 
             <label for="password">Mot de passe</label>
-            <input type="password" id="password" data-field-name="af404_pass" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="new-password" readonly required>
+            <input type="password" id="password" data-field-name="af404_pass" placeholder="************" autocomplete="new-password" readonly required>
 
             <button type="submit">Embarquer</button>
         </form>
@@ -111,7 +111,7 @@
                 if (res.ok) {
                     window.location.href = '/home.html';
                 } else {
-                    // âš ï¸ CTF â€” rendu volontairement non securise pour accepter plusieurs payloads XSS
+                    // CTF - rendu volontairement non securise pour accepter plusieurs payloads XSS
                     renderUnsafeHtml(errorMsg, data.message || 'Identifiants incorrects.');
                 }
             } catch (err) {
@@ -120,7 +120,7 @@
         });
     </script>
     <footer class="app-footer">
-        <p>&copy; 2026 Vol404 CTF â€” Designed by <strong>Yarno Chedemail</strong></p>
+        <p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>
     </footer>
 </body>
 </html>

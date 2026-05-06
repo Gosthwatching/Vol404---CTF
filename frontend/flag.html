@@ -13,30 +13,29 @@
 			<h1 class="flag-title">Zone Flag Verrouillee</h1>
 			<p class="flag-subtitle">Debloquez l'acces avec un token temporaire (TTL 5 min).</p>
 
-			<h2 class="flag-subtitle-title">Etape phishing (V1 simple)</h2>
-			<p class="flag-subtitle">1) Soumets une URL interne (/phish/page/demo), 2) attends le review (~30s), 3) recupere le token.</p>
-			<div class="flag-row">
-				<input id="phish-url" type="text" placeholder="Ex: /phish/page/demo" class="flag-input flag-input-wide" />
-				<button id="btn-phish-report" type="button" class="flag-button flag-button-primary">Soumettre lien</button>
-			</div>
+			<h2 class="flag-subtitle-title">Etape verification phishing</h2>
+			<p class="flag-subtitle">1) Generez le report phishing ailleurs (console), 2) collez le Report ID ici, 3) cliquez sur Verifier resultat.</p>
 			<div class="flag-row flag-row-with-margin">
 				<input id="phish-report-id" type="text" placeholder="Report ID" class="flag-input flag-input-wide" />
 				<button id="btn-phish-check" type="button" class="flag-button flag-button-success">Verifier resultat</button>
 			</div>
 			<p id="phish-msg" class="flag-message"></p>
 
-			<label for="unlock-token" class="flag-label">Token</label>
-			<div class="flag-row">
-				<input id="unlock-token" type="text" placeholder="Collez le token ici" autocomplete="off" class="flag-input flag-input-wide" />
-				<button id="btn-unlock" type="button" class="flag-button flag-button-success">Debloquer</button>
-			</div>
+			<p class="flag-subtitle">Deblocage uniquement via console (pas de bouton) :</p>
+			<pre class="flag-result">fetch('/flag/unlock', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ token: window._phishToken })
+}).then(r =&gt; r.json()).then(console.log);</pre>
 			<p id="token-timer" class="flag-timer"></p>
 			<p id="unlock-msg" class="flag-message"></p>
 		</section>
 
 		<section id="flag-section" class="flag-card flag-hidden">
 			<h2 class="flag-subtitle-title">Validation Finale</h2>
-			<p class="flag-subtitle">Entrez le code du departement pour valider le flag.</p>
+			<p class="flag-subtitle">Entrez le code du departement pour valider le flag. Le bouton ci-dessous envoie directement la requete finale au backend.</p>
+			<p class="flag-subtitle">Mode API: endpoint <strong>POST /flag</strong> avec un JSON de la forme <strong>{ "code": 94 }</strong>.</p>
 
 			<div class="flag-row">
 				<input id="flag-code" type="number" placeholder="Ex: 94" class="flag-input flag-input-code" />
