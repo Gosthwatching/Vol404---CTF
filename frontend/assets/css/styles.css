@@ -874,6 +874,7 @@ body.passengers-page .app-footer {
   flag.html
   ========================================================= */
 body.flag-page-body {
+  font-family: 'Merriweather Sans', sans-serif;
   min-height: 100vh;
   background: radial-gradient(circle at top, #163252 0%, #07101b 52%, #050a11 100%);
   color: #f4f6fb;
@@ -956,6 +957,9 @@ body.flag-page-body {
 }
 
 .flag-button-primary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border: 1px solid #5f8cff;
   background: #1f4fff;
 }
@@ -976,6 +980,7 @@ body.flag-page-body {
 }
 
 .flag-result {
+  line-height: 30px;
   margin-top: 0.8rem;
   padding: 0.75rem;
   border-radius: 10px;

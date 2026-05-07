@@ -10,6 +10,7 @@ const btnPhishCheck = document.getElementById('btn-phish-check');
 const phishMsg = document.getElementById('phish-msg');
 
 let timerInterval = null;
+let statusPollInterval = null;
 
 const showUnlockMessage = (text, ok = false) => {
     unlockMsg.style.color = ok ? '#7bffbe' : '#ffd0d0';
@@ -46,6 +47,13 @@ const refreshStatus = async () => {
     if (!res.ok) return;
     const data = await res.json();
     flagSection.style.display = data.unlocked ? '' : 'none';
+
+    // Stop polling once unlocked: no need to keep hitting the status endpoint.
+    if (data.unlocked && statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
+        showUnlockMessage('Zone finale debloquee. Vous pouvez maintenant valider le code.', true);
+    }
 };
 
 // Etape: le joueur recupere le resultat du review et le token.
@@ -113,4 +121,11 @@ btnSubmitFlag.addEventListener('click', async () => {
 });
 
 refreshStatus();
+
+// Allow unlock done from browser console to reflect in UI without page reload.
+statusPollInterval = setInterval(() => {
+    refreshStatus().catch(() => {
+        // Ignore transient network/session errors in background polling.
+    });
+}, 2000);
 
