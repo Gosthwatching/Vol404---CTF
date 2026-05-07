@@ -52,7 +52,7 @@ const refreshStatus = async () => {
     if (data.unlocked && statusPollInterval) {
         clearInterval(statusPollInterval);
         statusPollInterval = null;
-        showUnlockMessage('Zone finale debloquee. Vous pouvez maintenant valider le code.', true);
+        showUnlockMessage('Zone finale debloquee. Vous pouvez maintenant tenter la validation finale.', true);
     }
 };
 

@@ -13,11 +13,11 @@ const buildGatePayload = (ticket) => {
         message: encoded,
         hint: 'QTH Locator : JN18ER',
         indice: 'La cle survole la banlieue parisienne...',
-        opsNote: 'Acces gate confirme. Zone finale toujours verrouillee.',
+        opsNote: 'Acces gate confirme. Les donnees ci-dessus contiennent les indices utiles pour la suite.',
         validationRequired: true,
         validationMethod: 'Validation manuelle requise via jeton temporaire d override.',
         validationPortal: '/flag.html',
-        nextStep: 'Ouvrez le portail flag pour lancer la procedure de verification interne.'
+        nextStep: 'Poursuivez vers le portail de validation pour lancer la verification interne.'
     };
 };
 

