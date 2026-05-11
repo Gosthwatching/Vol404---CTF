@@ -22,15 +22,25 @@ const getLeaderboard = async (req, res) => {
     ).lean();
 
     const ranked = users
-        .map(u => ({
-            username:    u.username,
-            score:       scoreOf(u.progress),
-            registeredAt: u.createdAt,
-            flagFoundAt: u.progress?.flagFoundAt || null,
-            steps: Object.fromEntries(
-                STEPS.map(s => [s.label, u.progress?.[s.key] ?? false])
-            )
-        }))
+        .map(u => {
+            const progress = { ...(u.progress || {}) };
+            if (progress.flagFound) {
+                progress.loggedIn = true;
+                progress.xssDone = true;
+                progress.nosqlDone = true;
+                progress.logsAccessed = true;
+            }
+
+            return {
+                username:    u.username,
+                score:       scoreOf(progress),
+                registeredAt: u.createdAt,
+                flagFoundAt: progress.flagFoundAt || null,
+                steps: Object.fromEntries(
+                    STEPS.map(s => [s.label, progress[s.key] ?? false])
+                )
+            };
+        })
         .sort((a, b) => {
             // Tri : score décroissant, puis heure de flag croissante (premier arrivé)
             if (b.score !== a.score) return b.score - a.score;

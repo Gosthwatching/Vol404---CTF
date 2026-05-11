@@ -176,6 +176,13 @@ const studentLogin = async (req, res) => {
         return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect.' });
     }
 
+    if (!user.progress?.loggedIn) {
+        await User.updateOne(
+            { _id: user._id },
+            { $set: { 'progress.loggedIn': true, 'progress.firstLoginAt': new Date() } }
+        );
+    }
+
     req.session.user = { id: user._id, username: user.username, role: user.role };
     return res.json({ success: true });
 };

@@ -253,7 +253,7 @@ showPhishMessage('Token récupéré. Utilise window._phishToken dans la console 
 ```
 
 Le token est **intentionnellement exposé dans `window._phishToken`** pour forcer le joueur à ouvrir les DevTools. Le message lui indique clairement comment procéder.
-
+ 
 ### Ce que le joueur doit faire en console
 
 ```js
