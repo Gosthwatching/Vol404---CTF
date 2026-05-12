@@ -5,8 +5,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const connectDB = require('./config/db');
-const { startPhishReviewWorker } = require('./utils/phishQueue');
-
+const { requirePuzzleAccess } = require('./middleware/ctfProgressMiddleware');
 const app = express();
 
 // Needed when running behind reverse proxies/tunnels to get correct host/protocol.
@@ -14,8 +13,6 @@ app.set('trust proxy', true);
 
 // Connexion MongoDB
 connectDB();
-// Lance le worker phishing V1 (review auto toutes les 30s).
-startPhishReviewWorker();
 
 // Middlewares
 app.use(express.json());
@@ -41,6 +38,12 @@ app.use((req, res, next) => {
     if (req.path === '/index.html') {
         if (!req.session.user) return res.redirect('/register.html');
     }
+
+    // Le puzzle est une etape CTF: prerequis obligatoires avant l'acces.
+    if (req.path === '/puzzle.html') {
+        return requirePuzzleAccess(req, res, next);
+    }
+
     next();
 });
 
@@ -52,8 +55,8 @@ app.use('/auth',    require('./routes/auth'));
 app.use('/billets', require('./routes/billets'));
 app.use('/gate',    require('./routes/gate'));
 app.use('/flag',    require('./routes/flag'));
-app.use('/phish',   require('./routes/phish'));
 app.use('/admin',   require('./routes/admin'));
+app.use('/ctf',     require('./routes/ctf'));
 
 // Route racine �?' inscription si pas de session, sinon intro CTF
 app.get('/', (req, res) => {

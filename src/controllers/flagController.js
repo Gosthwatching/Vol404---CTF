@@ -1,6 +1,5 @@
 ﻿// Controleur flag: gere token temporaire et validation finale du flag.
 const User = require('../models/User');
-const { consumePhishToken } = require('../utils/phishQueue');
 
 const airports = {
     94: "ORY",   // Val-de-Marne �?' Paris-Orly
@@ -16,15 +15,6 @@ const unlockFlagPage = (req, res) => {
 
     if (!token) {
         return res.status(400).json({ error: 'Token requis.' });
-    }
-
-    const phishResult = consumePhishToken({
-        userId: req.session.user.id,
-        token
-    });
-
-    if (!phishResult.ok) {
-        return res.status(401).json({ error: 'Token invalide ou expire.' });
     }
 
     req.session.flagUnlocked = true;

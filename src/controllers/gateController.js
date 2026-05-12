@@ -1,7 +1,22 @@
 ﻿// Controleur gate: renvoie les informations gate selon token/scan.
 const Ticket = require('../models/Billet');
+const User = require('../models/User');
 const { vigenereEncode } = require('../utils/vigenere');
 const { getScanSession, markScanAsCompleted, markScanByToken } = require('../utils/scanSessions');
+
+const markGateProgress = async (req) => {
+    const userId = req.session?.user?.id;
+    if (!userId) {
+        return;
+    }
+
+    req.session.gatePassed = true;
+
+    await User.updateOne(
+        { _id: userId, 'progress.gatePassed': { $ne: true } },
+        { $set: { 'progress.gatePassed': true } }
+    );
+};
 
 const buildGatePayload = (ticket) => {
     const secret = 'DEPARTEMENT94';
@@ -29,6 +44,8 @@ const getGate = async (req, res) => {
     if (!ticket) {
         return res.status(404).json({ error: 'Gate introuvable ou token invalide.' });
     }
+
+    await markGateProgress(req);
 
     return res.json(buildGatePayload(ticket));
 };
@@ -75,6 +92,8 @@ const getGateFromScan = async (req, res) => {
     if (!ticket) {
         return res.status(404).json({ error: 'Gate introuvable ou token invalide.' });
     }
+
+    await markGateProgress(req);
 
     return res.json(buildGatePayload(ticket));
 };

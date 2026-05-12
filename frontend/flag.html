@@ -10,39 +10,11 @@
 <body class="flag-page-body">
 	<main class="flag-page">
 		<section class="flag-card">
-			<h1 class="flag-title">Zone Flag Verrouillee</h1>
-			<p class="flag-subtitle">Debloquez l'acces avec un token temporaire, puis validez la reponse finale.</p>
-
-			<h2 class="flag-subtitle-title">Verification phishing</h2>
-			<p class="flag-subtitle">Generez un report phishing en console, puis collez ici le <strong>reportId</strong> obtenu pour verifier son etat.</p>
-			<pre class="flag-result">fetch('/phish/report', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({ url: '/phish/page/&lt;id&gt;' })
-}).then(r =&gt; r.json()).then(data =&gt; {
-  console.log(data);
-  window._reportId = data.reportId;
-});</pre>
-			<p class="flag-subtitle">Si l'etat reste <strong>pending</strong>, attendez le prochain passage du worker puis recommencez.</p>
-			<div class="flag-row flag-row-with-margin">
-				<input id="phish-report-id" type="text" placeholder="Report ID" class="flag-input flag-input-wide" />
-				<button id="btn-phish-check" type="button" class="flag-button flag-button-success">Verifier resultat</button>
-			</div>
-			<p id="phish-msg" class="flag-message"></p>
-
-			<p class="flag-subtitle">Quand le token est recupere, utilisez-le en console pour deverrouiller l'acces :</p>
-			<pre class="flag-result">fetch('/flag/unlock', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({ token: window._phishToken })
-}).then(r =&gt; r.json()).then(console.log);</pre>
-			<p id="token-timer" class="flag-timer"></p>
-			<p id="unlock-msg" class="flag-message"></p>
+			<h1 class="flag-title">Zone Flag</h1>
+			<p class="flag-subtitle">Validez la reponse finale.</p>
 		</section>
 
-		<section id="flag-section" class="flag-card flag-hidden">
+		<section id="flag-section" class="flag-card">
 			<h2 class="flag-subtitle-title">Validation Finale</h2>
 			<p class="flag-subtitle">Entrez la reponse finale deduite a partir des indices obtenus au gate.</p>
 

@@ -32,8 +32,7 @@ L'app est accessible sur **http://localhost:3000**
 4. Logs admin       → accéder à /auth/logs sans être admin
 5. QR code + gate   → scanner le billet pour passer la porte
 6. Cryptanalyse     → décoder RVN (Vigenère) + JN18ER (QTH Locator)
-7. Phishing         → soumettre un lien au bot admin pour obtenir un token
-8. Flag final       → soumettre le code département 94 → CTF{ORY_boarding_complete}
+7. Flag final       → soumettre le code département 94 → CTF{ORY_boarding_complete}
 ```
 
 ---
@@ -109,32 +108,7 @@ Le gate renvoie ce JSON :
 - `JN18ER` (QTH Locator) → coordonnées GPS → région **Val-de-Marne** → département **94**
 - `RVN` (Vigenère, clé = DEPARTEMENT) → `ORY` = code IATA de Paris-Orly
 
-### Étape 7 — Phishing : obtenir le token temporaire
-
-> Le bot admin (worker 30s) accepte uniquement les URLs commençant par `/phish/page/`.
-> Le token est valide 5 minutes et à usage unique.
-
-```powershell
-# 7a. Soumettre le lien de phishing
-$report = Invoke-RestMethod -Uri 'http://localhost:3000/phish/report' `
-  -Method Post -ContentType 'application/json' -WebSession $session `
-  -Body (@{ url = '/phish/page/alice' } | ConvertTo-Json)
-$reportId = $report.reportId
-Write-Host "Report ID : $reportId"
-
-# 7b. Attendre ~30 secondes puis récupérer le token
-Start-Sleep -Seconds 35
-$result = Invoke-RestMethod -Uri "http://localhost:3000/phish/result/$reportId" -WebSession $session
-$phishToken = $result.token
-Write-Host "Token : $phishToken"
-
-# 7c. Utiliser le token pour débloquer la zone flag
-Invoke-RestMethod -Uri 'http://localhost:3000/flag/unlock' `
-  -Method Post -ContentType 'application/json' -WebSession $session `
-  -Body (@{ token = $phishToken } | ConvertTo-Json)
-```
-
-### Étape 8 — Soumettre le code final
+### Étape 7 — Soumettre le code final
 
 ```powershell
 $flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' `
@@ -259,129 +233,25 @@ Réponse finale = 94
 **À ce moment-là, l'étudiant ne doit pas encore envoyer `94` à `/flag`.**
 
 Pourquoi ?
-- parce que la zone finale est encore verrouillée
-- il faut d'abord faire l'étape phishing pour obtenir le droit d'entrer
+- parce que la zone finale est verrouillée
+- elle doit être débloquée manuellement avec un token
 
-### Étape 7 — Phishing (DevTools Console)
+### Étape 7 — Flag final
 
-**But de cette étape :** débloquer l'accès à la zone finale.
-
-Le point important est le suivant :
-
-```text
-Étape 6 donne la bonne réponse (94)
-mais
-Étape 7 donne le droit d'utiliser cette réponse
-```
-
-Sans le token phishing, même avec la bonne valeur `94`, la route `/flag` répondra `403` car la zone finale est encore verrouillée.
-
-**Ce que l'étudiant doit comprendre ici :**
-- `94` = la bonne réponse finale
-- `token phishing` = la clé d'accès pour pouvoir soumettre cette réponse
-- il faut donc faire **les deux**
-
-**7a. Soumettre le report phishing** (dans la console, session active requise) :
-
-```javascript
-fetch('/phish/report', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({ url: '/phish/page/alice' })
-})
-  .then(r => r.json())
-  .then(data => { console.log(data); window._reportId = data.reportId; });
-```
-
-**Ce que fait ce code :**
-- il envoie un lien au module phishing
-- le backend crée un report en statut `pending`
-- il renvoie un `reportId`
-- on stocke ce `reportId` dans `window._reportId` pour le réutiliser facilement ensuite
-
-**Ce que l'étudiant doit faire juste après :**
-
-1. Vérifier qu'un objet s'affiche dans la console
-2. Vérifier qu'il contient bien un `reportId`
-3. Ne pas fermer l'onglet tout de suite
-4. Copier ce `reportId` si besoin
-
-**7b. Vérifier le résultat sur flag.html :**
-
-1. Ouvrir http://localhost:3000/flag.html
-2. Coller `window._reportId` dans le champ **Report ID**
-3. Cliquer sur **Vérifier résultat**
-4. Si `pending` → attendre 30s et recliquer
-5. Quand `success` → `window._phishToken` est rempli automatiquement
-
-**Ce qui se passe côté backend :**
-- le worker passe toutes les 30 secondes
-- il lit un report `pending`
-- si l'URL commence bien par `/phish/page/`, il génère un token temporaire
-- ce token est ensuite renvoyé au front
-- le front le place dans `window._phishToken`
-
-**Ce que l'étudiant doit voir à l'écran :**
-- un message du type `Token récupéré`
-- un compte à rebours du token
-- la variable `window._phishToken` disponible dans la console
-
-**Si l'étudiant voit `pending` :**
-- ce n'est pas une erreur
-- cela veut juste dire que le worker n'est pas encore passé
-- il faut attendre puis recliquer sur **Vérifier résultat**
-
-**7c. Débloquer la zone flag** (obligatoire en console, pas de bouton) :
-
-```javascript
-fetch('/flag/unlock', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({ token: window._phishToken })
-})
-  .then(r => r.json())
-  .then(console.log);
-// Résultat attendu : { success: true, redirect: '/flag.html' }
-```
-
-**Ce que fait ce code :**
-- il envoie le token à `/flag/unlock`
-- le backend vérifie que le token est correct, non expiré, et pas déjà utilisé
-- si c'est bon, il met `flagUnlocked = true` dans la session
-
-**Ce que l'étudiant doit vérifier après exécution :**
-- dans la console : `{ success: true, redirect: '/flag.html' }`
-- sur la page : un message qui dit que la zone finale est débloquée
-- si besoin, recharger `flag.html`
-
-Autrement dit :
-
-```text
-Étape 7 = j'obtiens l'autorisation d'entrer dans la dernière zone
-```
-
-### Étape 8 — Flag final
-
-**Maintenant seulement**, la zone flag est déverrouillée.
-
-Tu peux donc envoyer la valeur trouvée à l'étape 6, c'est-à-dire `94`.
+**Maintenant**, tu dois envoyer la valeur trouvée à l'étape 6, c'est-à-dire `94`.
 
 La logique complète est :
 
 ```text
 Étape 6 → je découvre 94
-Étape 7 → je débloque l'accès avec le token
-Étape 8 → j'envoie 94 à /flag
+Étape 7 → j'envoie 94 à /flag
 ```
 
 **Ce que l'étudiant doit faire concrètement :**
 
 1. Garder en tête la valeur trouvée à l'étape 6 : `94`
-2. Vérifier que la zone finale est bien déverrouillée
-3. Exécuter la requête ci-dessous dans la console
-4. Lire la réponse renvoyée par le serveur
+2. Exécuter la requête ci-dessous dans la console
+3. Lire la réponse renvoyée par le serveur
 
 Soumettre le code :
 
@@ -399,7 +269,7 @@ fetch('/flag', {
 **Pourquoi `code: 94` ?**
 - parce que l'étape 6 a permis de retrouver le département associé à la destination
 - `/flag` attend justement ce code département
-- comme la session a déjà été déverrouillée à l'étape 7, le backend accepte maintenant la réponse
+- le backend accepte maintenant la réponse
 
 **Ce que l'étudiant doit voir à la fin :**
 
@@ -408,7 +278,6 @@ fetch('/flag', {
 ```
 
 Si l'étudiant reçoit une erreur :
-- `403` → la zone n'a pas été déverrouillée, refaire l'étape 7
 - `400` → mauvaise valeur envoyée, revérifier l'étape 6
 
 **Résultat attendu :**
@@ -427,6 +296,4 @@ CTF{ORY_boarding_complete}
 | Le téléphone ne charge pas l'URL | Vérifier même Wi-Fi + firewall Windows port 3000 |
 | Le QR ne redirige pas le PC | Recharger `billet.html` → nouveau `scanId` généré |
 | La session expire | Refaire login NoSQL puis reprendre à l'étape billet |
-| Token phishing invalide | Token à usage unique ou expiré (5 min) → refaire étape 7 |
-| `pending` après 30s | Worker traite 1 report par cycle → attendre encore 30s |
 

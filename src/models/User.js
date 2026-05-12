@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
         xssDone:       { type: Boolean, default: false },
         nosqlDone:     { type: Boolean, default: false },
         logsAccessed:  { type: Boolean, default: false },
+        gatePassed:    { type: Boolean, default: false },
+        puzzleUnlocked:{ type: Boolean, default: false },
+        puzzleDone:    { type: Boolean, default: false },
+        ctfFinished:   { type: Boolean, default: false },
         flagFound:     { type: Boolean, default: false },
         firstLoginAt:  { type: Date,    default: null  },
         flagFoundAt:   { type: Date,    default: null  }
