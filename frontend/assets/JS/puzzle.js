@@ -27,6 +27,10 @@ const state = {
   completed: false
 };
 
+const PUZZLE_COLS = 5;
+const PUZZLE_ROWS = 4;
+const PUZZLE_IMAGE_URL = "assets/img/aeroport-bordeaux.jpg";
+
 const container = document.getElementById("puzzle-container");
 const counter = document.getElementById("puzzle-counter");
 const message = document.getElementById("puzzle-message");
@@ -50,10 +54,23 @@ function initGame() {
   message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege.";
 
   pieces.forEach((piece) => {
+    const col = document.createElement("div");
+    col.className = "col-6 col-md-3 col-lg-2";
+
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "puzzle-piece";
-    button.textContent = `Piece ${piece.id}`;
+    button.className = "puzzle-piece puzzle-piece-image w-100";
+    button.setAttribute("aria-label", `Piece ${piece.id}`);
+
+    const index = piece.id - 1;
+    const row = Math.floor(index / PUZZLE_COLS);
+    const colIndex = index % PUZZLE_COLS;
+    const x = (colIndex / (PUZZLE_COLS - 1)) * 100;
+    const y = (row / (PUZZLE_ROWS - 1)) * 100;
+
+    button.style.backgroundImage = `url('${PUZZLE_IMAGE_URL}')`;
+    button.style.backgroundSize = `${PUZZLE_COLS * 100}% ${PUZZLE_ROWS * 100}%`;
+    button.style.backgroundPosition = `${x}% ${y}%`;
 
     button.addEventListener("click", () => {
       if (state.gameOver || state.completed) {
@@ -63,6 +80,7 @@ function initGame() {
       if (piece.isTrap) {
         state.gameOver = true;
         button.textContent = "Piege";
+        button.classList.add("is-trap");
         message.textContent = "Perdu. Tu as clique sur un piege.";
         return;
       }
@@ -73,7 +91,7 @@ function initGame() {
 
       state.foundPieces.push(piece.id);
       button.disabled = true;
-      button.textContent = `Piece ${piece.id} trouvee`;
+      button.classList.add("is-found");
       counter.textContent = `Pieces correctes : ${state.foundPieces.length}/15`;
 
       if (state.foundPieces.length === 15) {
@@ -84,7 +102,8 @@ function initGame() {
       }
     });
 
-    container.appendChild(button);
+    col.appendChild(button);
+    container.appendChild(col);
   });
 }
 

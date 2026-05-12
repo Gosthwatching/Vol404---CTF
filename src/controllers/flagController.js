@@ -42,7 +42,7 @@ const checkFlag = async (req, res) => {
         return res.status(400).json({ error: "Mauvaise réponse." });
     }
 
-    // Marquer flagFound pour l'élève connecté
+    // Marquer l'etape finale comme validee pour l'eleve connecte.
     if (req.session?.user) {
         await User.updateOne(
             { _id: req.session.user.id, 'progress.flagFound': { $ne: true } },
@@ -50,7 +50,11 @@ const checkFlag = async (req, res) => {
         );
     }
 
-    return res.json({ flag: `CTF{${airports[dep]}_boarding_complete}` });
+    return res.json({
+        success: true,
+        message: `Code valide (${dep}/${airports[dep]}). Redirection vers le puzzle.`,
+        redirect: '/puzzle.html'
+    });
 };
 
 module.exports = { checkFlag, unlockFlagPage, getFlagStatus };

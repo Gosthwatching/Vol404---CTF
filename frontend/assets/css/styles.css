@@ -991,6 +991,78 @@ body.flag-page-body {
 }
 
 /* =========================================================
+  puzzle.html
+  ========================================================= */
+body.puzzle-page-body {
+  font-family: 'Merriweather Sans', sans-serif;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #163252 0%, #07101b 52%, #050a11 100%);
+  color: #f4f6fb;
+}
+
+.puzzle-page {
+  max-width: 980px;
+  margin: 3rem auto;
+  padding: 1.25rem;
+}
+
+.puzzle-card {
+  background: rgba(9, 14, 22, 0.82);
+  border: 1px solid rgba(120, 180, 255, 0.28);
+  border-radius: 14px;
+  padding: 1rem 1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.puzzle-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.35rem;
+}
+
+.puzzle-subtitle-title {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.puzzle-subtitle {
+  margin: 0 0 0.9rem;
+  opacity: 0.9;
+}
+
+.puzzle-counter,
+.puzzle-message {
+  margin: 0.6rem 0;
+}
+
+.puzzle-piece-image {
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(120, 180, 255, 0.35);
+  border-radius: 12px;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.puzzle-piece-image:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.puzzle-piece-image.is-found {
+  opacity: 0.5;
+  filter: saturate(0.2);
+  border-color: rgba(43, 214, 132, 0.8);
+}
+
+.puzzle-piece-image.is-trap {
+  background-image: none !important;
+  background: #b72b2b;
+  color: #fff;
+  font-weight: 700;
+  border-color: #ff8a8a;
+}
+
+/* =========================================================
   responsive (login.html / home.html / reservation.html /
   billet.html / passengers.html)
   ========================================================= */

@@ -23,6 +23,12 @@ btnSubmitFlag.addEventListener('click', async () => {
         return;
     }
 
-    flagResultNode.textContent = data.flag || JSON.stringify(data, null, 2);
+    if (data.redirect) {
+        flagResultNode.textContent = data.message || 'Code valide. Redirection...';
+        window.location.href = data.redirect;
+        return;
+    }
+
+    flagResultNode.textContent = data.flag || data.message || JSON.stringify(data, null, 2);
 });
 
