@@ -1034,11 +1034,25 @@ body.puzzle-page-body {
   margin: 0.6rem 0;
 }
 
+/* Grille puzzle simple: 4 colonnes x 5 lignes pour 20 pieces */
+.puzzle-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: .6rem;
+}
+
+.puzzle-container > div {
+  padding: 0;
+}
+
 .puzzle-piece-image {
   aspect-ratio: 1 / 1;
   border: 1px solid rgba(120, 180, 255, 0.35);
   border-radius: 12px;
+  background-color: #0f1624;
   background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 20px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }

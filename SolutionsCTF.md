@@ -108,7 +108,32 @@ Le gate renvoie ce JSON :
 - `JN18ER` (QTH Locator) → coordonnées GPS → région **Val-de-Marne** → département **94**
 - `RVN` (Vigenère, clé = DEPARTEMENT) → `ORY` = code IATA de Paris-Orly
 
-### Étape 7 — Soumettre le code final
+### Étape 7 — Phishing : obtenir le token temporaire
+
+> Le bot admin (worker 30s) accepte uniquement les URLs commençant par `/phish/page/`.
+> Le token est valide 5 minutes et à usage unique.
+
+```powershell
+# 7a. Soumettre le lien de phishing
+$report = Invoke-RestMethod -Uri 'http://localhost:3000/phish/report' `
+  -Method Post -ContentType 'application/json' -WebSession $session `
+  -Body (@{ url = '/phish/page/alice' } | ConvertTo-Json)
+$reportId = $report.reportId
+Write-Host "Report ID : $reportId"
+
+# 7b. Attendre ~30 secondes puis récupérer le token
+Start-Sleep -Seconds 35
+$result = Invoke-RestMethod -Uri "http://localhost:3000/phish/result/$reportId" -WebSession $session
+$phishToken = $result.token
+Write-Host "Token : $phishToken"
+
+# 7c. Utiliser le token pour débloquer la zone flag
+Invoke-RestMethod -Uri 'http://localhost:3000/flag/unlock' `
+  -Method Post -ContentType 'application/json' -WebSession $session `
+  -Body (@{ token = $phishToken } | ConvertTo-Json)
+```
+
+### Étape 8 — Soumettre le code final
 
 ```powershell
 $flag = Invoke-RestMethod -Uri 'http://localhost:3000/flag' `
@@ -233,25 +258,59 @@ Réponse finale = 94
 **À ce moment-là, l'étudiant ne doit pas encore envoyer `94` à `/flag`.**
 
 Pourquoi ?
-- parce que la zone finale est verrouillée
-- elle doit être débloquée manuellement avec un token
+- parce que la zone finale est encore verrouillée
+- il faut d'abord déverrouiller la session avec `/flag/unlock`
 
-### Étape 7 — Flag final
+### Étape 7 — Débloquer la zone flag (console)
 
-**Maintenant**, tu dois envoyer la valeur trouvée à l'étape 6, c'est-à-dire `94`.
+Dans la console DevTools du même onglet/session :
+
+```javascript
+fetch('/flag/unlock', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ token: 'ok' })
+})
+  .then(r => r.json())
+  .then(console.log);
+// Résultat attendu : { success: true, redirect: '/flag.html' }
+```
+
+**Ce que fait ce code :**
+- il envoie un token non vide à `/flag/unlock`
+- le backend active `flagUnlocked = true` dans la session
+
+**Ce que l'étudiant doit vérifier après exécution :**
+- dans la console : `{ success: true, redirect: '/flag.html' }`
+- puis entrer `94` dans la zone finale
+
+Autrement dit :
+
+```text
+Étape 7 = j'obtiens l'autorisation d'entrer dans la dernière zone
+```
+
+### Étape 8 — Flag final
+
+**Maintenant seulement**, la zone flag est déverrouillée.
+
+Tu peux donc envoyer la valeur trouvée à l'étape 6, c'est-à-dire `94`.
 
 La logique complète est :
 
 ```text
 Étape 6 → je découvre 94
-Étape 7 → j'envoie 94 à /flag
+Étape 7 → je débloque l'accès avec le token
+Étape 8 → j'envoie 94 à /flag
 ```
 
 **Ce que l'étudiant doit faire concrètement :**
 
 1. Garder en tête la valeur trouvée à l'étape 6 : `94`
-2. Exécuter la requête ci-dessous dans la console
-3. Lire la réponse renvoyée par le serveur
+2. Vérifier que la zone finale est bien déverrouillée
+3. Exécuter la requête ci-dessous dans la console
+4. Lire la réponse renvoyée par le serveur
 
 Soumettre le code :
 
@@ -269,7 +328,7 @@ fetch('/flag', {
 **Pourquoi `code: 94` ?**
 - parce que l'étape 6 a permis de retrouver le département associé à la destination
 - `/flag` attend justement ce code département
-- le backend accepte maintenant la réponse
+- comme la session est déverrouillée à l'étape 7, le backend accepte la réponse
 
 **Ce que l'étudiant doit voir à la fin :**
 
@@ -278,6 +337,7 @@ fetch('/flag', {
 ```
 
 Si l'étudiant reçoit une erreur :
+- `403` → la zone n'a pas été déverrouillée, refaire l'étape 7
 - `400` → mauvaise valeur envoyée, revérifier l'étape 6
 
 **Résultat attendu :**
@@ -296,4 +356,5 @@ CTF{ORY_boarding_complete}
 | Le téléphone ne charge pas l'URL | Vérifier même Wi-Fi + firewall Windows port 3000 |
 | Le QR ne redirige pas le PC | Recharger `billet.html` → nouveau `scanId` généré |
 | La session expire | Refaire login NoSQL puis reprendre à l'étape billet |
+| `Token requis.` sur `/flag/unlock` | Le body est vide/undefined → envoyer `token: 'ok'` |
 

@@ -19,3 +19,9 @@ Le QR ne doit pas donner directement la recompense finale. Il doit plutot servir
 
 
 j'ai penser à un truc faut que tu me dises ce que tu en penses objectivement, une fois que les étudiants ont récupérer le flag, il doivent trouver un moyen de rentré le flag, j'ai penser qu'il devrais faire une sorte de hack d'une autre technologie (à voir) où il devrait, dans le storytelling, rentrer dans la cabine de pilotage et rentrer des donnés d'une destination (à réfléchir) une fois les donné entré il y a un mot de passe et ce mot de passe c'est le flag
+
+
+
+
+une fois le puzzle résolut = image ET/OU audio avec indice sur une route pour valider le flag trouvé 
++ ajouté tout ça coter json prof pour suivis avant de valider les étapes systeme de questionnaire à remplir 5 question crée 3 prises aléatoirement.

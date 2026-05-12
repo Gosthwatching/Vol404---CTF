@@ -27,9 +27,10 @@ const state = {
   completed: false
 };
 
-const PUZZLE_COLS = 5;
-const PUZZLE_ROWS = 4;
-const PUZZLE_IMAGE_URL = "assets/img/aeroport-bordeaux.jpg";
+const pieceImageUrls = Array.from({ length: 20 }, (_, index) => {
+  const number = index + 1;
+  return number === 1 ? "assets/img/avion.png" : `assets/img/avion${number}.png`;
+});
 
 const container = document.getElementById("puzzle-container");
 const counter = document.getElementById("puzzle-counter");
@@ -54,23 +55,13 @@ function initGame() {
   message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege.";
 
   pieces.forEach((piece) => {
-    const col = document.createElement("div");
-    col.className = "col-6 col-md-3 col-lg-2";
-
     const button = document.createElement("button");
     button.type = "button";
     button.className = "puzzle-piece puzzle-piece-image w-100";
     button.setAttribute("aria-label", `Piece ${piece.id}`);
-
-    const index = piece.id - 1;
-    const row = Math.floor(index / PUZZLE_COLS);
-    const colIndex = index % PUZZLE_COLS;
-    const x = (colIndex / (PUZZLE_COLS - 1)) * 100;
-    const y = (row / (PUZZLE_ROWS - 1)) * 100;
-
-    button.style.backgroundImage = `url('${PUZZLE_IMAGE_URL}')`;
-    button.style.backgroundSize = `${PUZZLE_COLS * 100}% ${PUZZLE_ROWS * 100}%`;
-    button.style.backgroundPosition = `${x}% ${y}%`;
+    button.style.backgroundImage = `url('${pieceImageUrls[piece.id - 1]}')`;
+    button.style.backgroundSize = "cover";
+    button.style.backgroundPosition = "center";
 
     button.addEventListener("click", () => {
       if (state.gameOver || state.completed) {
@@ -102,8 +93,7 @@ function initGame() {
       }
     });
 
-    col.appendChild(button);
-    container.appendChild(col);
+    container.appendChild(button);
   });
 }
 
