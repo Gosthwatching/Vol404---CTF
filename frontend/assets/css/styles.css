@@ -964,6 +964,12 @@ body.flag-page-body {
   background: #1f4fff;
 }
 
+.gate-link-disabled {
+  opacity: 0.5;
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
 .flag-button-success {
   border: 1px solid #20b266;
   background: #15924f;

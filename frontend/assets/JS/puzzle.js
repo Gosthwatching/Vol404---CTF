@@ -35,6 +35,7 @@ const pieceImageUrls = Array.from({ length: 20 }, (_, index) => {
 const container = document.getElementById("puzzle-container");
 const counter = document.getElementById("puzzle-counter");
 const message = document.getElementById("puzzle-message");
+const restartButton = document.getElementById("puzzle-restart");
 
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -52,7 +53,7 @@ function initGame() {
   shuffle(pieces);
   container.innerHTML = "";
   counter.textContent = "Pieces correctes : 0/15";
-  message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege.";
+  message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege. Memorise les positions.";
 
   pieces.forEach((piece) => {
     const button = document.createElement("button");
@@ -96,5 +97,9 @@ function initGame() {
     container.appendChild(button);
   });
 }
+
+restartButton.addEventListener("click", () => {
+  initGame();
+});
 
 initGame();
