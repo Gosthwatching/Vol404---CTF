@@ -5,6 +5,7 @@ const profMiddleware = require('../middleware/profMiddleware');
 const leaderboardController = require('../controllers/leaderboardController');
 
 router.get('/leaderboard', profMiddleware, leaderboardController.getLeaderboard);
+router.post('/cleanup-fake-users', profMiddleware, leaderboardController.cleanupFakeUsers);
 
 module.exports = router;
 

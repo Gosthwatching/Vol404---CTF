@@ -37,6 +37,16 @@ const counter = document.getElementById("puzzle-counter");
 const message = document.getElementById("puzzle-message");
 const restartButton = document.getElementById("puzzle-restart");
 
+function markPuzzleAsCompleted() {
+  fetch("/ctf/puzzle-complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include"
+  }).catch(() => {
+    // Keep game UX responsive even if progress sync fails.
+  });
+}
+
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -88,7 +98,8 @@ function initGame() {
 
       if (state.foundPieces.length === 15) {
         state.completed = true;
-        message.textContent = "Bravo. Puzzle termine.";
+        markPuzzleAsCompleted();
+        alert("Bravo. Puzzle termine.");
       } else {
         message.textContent = "Bonne piece. Continue.";
       }

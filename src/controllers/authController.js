@@ -4,6 +4,17 @@ const User = require('../models/User');
 
 const hashPassword = (pwd) => crypto.createHash('sha256').update(pwd).digest('hex');
 
+const setTrackedPlayer = (req, user) => {
+    if (!user || user.role !== 'player') {
+        return;
+    }
+    req.session.trackedPlayerId = String(user._id);
+};
+
+const resolveProgressUserId = (req) => {
+    return req.session?.trackedPlayerId || req.session?.user?.id || null;
+};
+
 const ensureAttackProgress = (req) => {
     if (!req.session.attackProgress) {
         req.session.attackProgress = {
@@ -34,11 +45,25 @@ const login = async (req, res) => {
     const { username, password } = req.body;
     const progress = ensureAttackProgress(req);
 
+    if (typeof username === 'string' && username.trim()) {
+        const candidate = await User.findOne({ username: username.trim(), role: 'player' }).select('_id role');
+        if (candidate) {
+            setTrackedPlayer(req, candidate);
+        }
+    }
+
     if (isLikelyXssPayload(username)) {
         progress.xssDone = true;
     }
 
-    if (isLikelyNoSqlInjection(password)) {
+    const isNoSqlAttempt = isLikelyNoSqlInjection(password);
+    if (isNoSqlAttempt && !progress.xssDone) {
+        return res.status(403).json({
+            message: 'Étape bloquée: faites d abord une XSS, puis retentez la NoSQL.',
+        });
+    }
+
+    if (isNoSqlAttempt) {
         progress.nosqlDone = true;
     }
 
@@ -57,16 +82,22 @@ const login = async (req, res) => {
         });
     }
 
+    const progressUserId = resolveProgressUserId(req);
+
     // Persister la progression XSS / NoSQL dans la DB
     const dbUpdate = {};
     if (progress.xssDone)  dbUpdate['progress.xssDone']  = true;
     if (progress.nosqlDone) dbUpdate['progress.nosqlDone'] = true;
-    if (!user.progress?.loggedIn) {
-        dbUpdate['progress.loggedIn']     = true;
-        dbUpdate['progress.firstLoginAt'] = new Date();
+
+    if (progressUserId && Object.keys(dbUpdate).length) {
+        await User.updateOne({ _id: progressUserId }, { $set: dbUpdate });
     }
-    if (Object.keys(dbUpdate).length) {
-        await User.updateOne({ _id: user._id }, { $set: dbUpdate });
+
+    if (progressUserId) {
+        await User.updateOne(
+            { _id: progressUserId, 'progress.loggedIn': { $ne: true } },
+            { $set: { 'progress.loggedIn': true, 'progress.firstLoginAt': new Date() } }
+        );
     }
 
     req.session.user = {
@@ -74,6 +105,8 @@ const login = async (req, res) => {
         username: user.username,
         role: user.role
     };
+
+    setTrackedPlayer(req, user);
 
     const target = (progress.xssDone && progress.nosqlDone) ? '/auth/logs' : '/home.html';
     return res.json({ success: true, redirect: target });
@@ -96,9 +129,10 @@ const logs = async (req, res) => {
     }
 
     // Marquer logsAccessed pour l'élève connecté
-    if (req.session.user) {
+    const progressUserId = resolveProgressUserId(req);
+    if (progressUserId) {
         await User.updateOne(
-            { _id: req.session.user.id },
+            { _id: progressUserId },
             { $set: { 'progress.logsAccessed': true } }
         );
     }
@@ -153,12 +187,14 @@ const register = async (req, res) => {
         return res.status(409).json({ message: 'Cet identifiant est deja pris.' });
     }
 
-    await User.create({
+    const createdUser = await User.create({
         username: name,
         password: hashPassword(password),
         passwordClear: password,
         role: 'player'
     });
+
+    setTrackedPlayer(req, createdUser);
 
     return res.status(201).json({ success: true });
 };
@@ -184,6 +220,7 @@ const studentLogin = async (req, res) => {
     }
 
     req.session.user = { id: user._id, username: user.username, role: user.role };
+    setTrackedPlayer(req, user);
     return res.json({ success: true });
 };
 

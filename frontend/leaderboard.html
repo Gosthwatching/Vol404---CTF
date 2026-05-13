@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>CTF Vol 404 �?" Suivi élèves</title>
+	<title>CTF Vol 404 - Suivi élèves</title>
 	<link rel="stylesheet" href="assets/css/styles.css">
 	<style>
 		body { background: #0a0e1a; color: #c9d1d9; font-family: 'Courier New', monospace; padding: 2rem; }
@@ -24,12 +24,12 @@
 		#stats { color: #8b949e; margin-bottom: 1rem; font-size: 0.85rem; }
 		table { width: 100%; border-collapse: collapse; }
 		thead th {
-			background: #161b22; color: #58a6ff; text-align: left;
+			background: #161b22; color: #58a6ff; text-align: center;
 			padding: 0.6rem 0.75rem; border-bottom: 1px solid #30363d; font-size: 0.85rem;
 		}
 		tbody tr:nth-child(even) { background: #0d1117; }
 		tbody tr:hover { background: #1c2128; }
-		td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+		td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; font-size: 0.85rem; text-align: center; }
 		.rank { color: #8b949e; width: 2.5rem; }
 		.username { color: #e6edf3; font-weight: bold; }
 		.score { color: #f0883e; font-weight: bold; text-align: center; }
@@ -42,8 +42,8 @@
 	</style>
 </head>
 <body>
-	<h1>�o^ Vol 404 �?" Suivi des élèves</h1>
-	<p class="subtitle">Tableau de progression CTF �?" accès professeur</p>
+	<h1>✈️ Vol 404 - Suivi des élèves</h1>
+	<p class="subtitle">Tableau de progression CTF - accès professeur</p>
 
 	<div id="key-form-wrapper">
 		<form id="key-form">
@@ -55,20 +55,11 @@
 
 	<div id="board" style="display:none">
 		<p id="stats"></p>
-		<button id="refresh">�?� Rafraîchir</button>
+		<button id="refresh">🔄 Rafraîchir</button>
+		<button id="cleanup-fakes" style="margin-bottom:1.5rem; margin-left:0.5rem; background:#9b1c1c; color:#fff; border:1px solid #c73a3a; padding:0.4rem 1rem; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.85rem;">Supprimer faux comptes</button>
 		<table>
 			<thead>
-				<tr>
-					<th class="rank">#</th>
-					<th>�?lève</th>
-					<th class="score">Score</th>
-					<th>Connexion</th>
-					<th>XSS</th>
-					<th>NoSQL</th>
-					<th>Logs admin</th>
-					<th>Flag trouvé</th>
-					<th>Heure du flag</th>
-				</tr>
+				<tr id="table-head-row"></tr>
 			</thead>
 			<tbody id="rows"></tbody>
 		</table>
@@ -78,15 +69,27 @@
 		let savedKey = '';
 
 		function fmt(isoDate) {
-			if (!isoDate) return '�?"';
+			if (!isoDate) return '-';
 			const d = new Date(isoDate);
 			return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 		}
 
 		function cell(val) {
 			return val
-				? '<td class="check">�o"</td>'
-				: '<td class="cross">�?"</td>';
+				? '<td class="check">✓</td>'
+				: '<td class="cross">✗</td>';
+		}
+
+		function renderHead(stepLabels) {
+			const headRow = document.getElementById('table-head-row');
+			const stepHeaders = stepLabels.map((label) => `<th>${label}</th>`).join('');
+			headRow.innerHTML = `
+				<th class="rank">#</th>
+				<th>Élève</th>
+				<th class="score">Score</th>
+				${stepHeaders}
+				<th>Heure du flag</th>
+			`;
 		}
 
 		async function load(key) {
@@ -96,25 +99,36 @@
 			return res.json();
 		}
 
+		async function cleanupFakeUsers(key) {
+			const res = await fetch(`/admin/cleanup-fake-users?key=${encodeURIComponent(key)}`, {
+				method: 'POST'
+			});
+			const data = await res.json();
+			if (res.status === 403 || res.status === 401) throw new Error('Clé incorrecte.');
+			if (!res.ok) throw new Error(data.error || 'Erreur pendant le nettoyage.');
+			return data;
+		}
+
 		async function render(key) {
 			const data = await load(key);
+			const stepLabels = Array.isArray(data.steps) ? data.steps : [];
+			renderHead(stepLabels);
+			const scoreMax = stepLabels.length || 1;
+			const foundCount = data.leaderboard.filter((u) => u.steps && u.steps['Flag trouvé']).length;
 			document.getElementById('stats').textContent =
-				`${data.total} élève(s) inscrit(s) �?" ${data.leaderboard.filter(u => u.steps['Flag trouvé']).length} flag(s) trouvé(s)`;
+				`${data.total} élève(s) inscrit(s) - ${foundCount} flag(s) trouvé(s)`;
 
 			const rows = data.leaderboard.map(u => `
 				<tr>
 					<td class="rank">${u.rank}</td>
 					<td class="username">${u.username}</td>
-					<td class="score">${u.score} / 5</td>
-					${cell(u.steps['Connexion'])}
-					${cell(u.steps['XSS'])}
-					${cell(u.steps['NoSQL Injection'])}
-					${cell(u.steps['Logs admin'])}
-					${cell(u.steps['Flag trouvé'])}
+					<td class="score">${u.score} / ${scoreMax}</td>
+					${stepLabels.map((label) => cell(u.steps && u.steps[label])).join('')}
 					<td class="flag-time">${fmt(u.flagFoundAt)}</td>
 				</tr>
 			`).join('');
-			document.getElementById('rows').innerHTML = rows || '<tr><td colspan="9" style="color:#8b949e;text-align:center">Aucun élève inscrit</td></tr>';
+			const emptyColspan = 4 + stepLabels.length;
+			document.getElementById('rows').innerHTML = rows || `<tr><td colspan="${emptyColspan}" style="color:#8b949e;text-align:center">Aucun élève inscrit</td></tr>`;
 		}
 
 		document.getElementById('key-form').addEventListener('submit', async (e) => {
@@ -133,6 +147,26 @@
 		});
 
 		document.getElementById('refresh').addEventListener('click', () => render(savedKey));
+
+		document.getElementById('cleanup-fakes').addEventListener('click', async () => {
+			if (!savedKey) return;
+			const err = document.getElementById('error');
+			err.textContent = '';
+
+			if (!window.confirm('Supprimer tous les faux comptes seedés ?')) {
+				return;
+			}
+
+			try {
+				const result = await cleanupFakeUsers(savedKey);
+				await render(savedKey);
+				err.style.color = '#3fb950';
+				err.textContent = `Nettoyage terminé: ${result.usersDeleted} compte(s), ${result.ticketsDeleted} billet(s).`;
+			} catch (ex) {
+				err.style.color = '#f85149';
+				err.textContent = ex.message;
+			}
+		});
 	</script>
 
 	<footer class="app-footer" style="margin-top:3rem">

@@ -1,5 +1,14 @@
 ﻿// Controleur leaderboard: Calcule et expose le classement des participants.
 const User = require('../models/User');
+const Ticket = require('../models/Billet');
+
+const FAKE_PLAYER_FILTER = {
+    role: 'player',
+    $or: [
+        { seeded: true },
+        { username: { $regex: /_af\d{3,4}$/i } }
+    ]
+};
 
 // �?tapes CTF dans l'ordre chronologique
 const STEPS = [
@@ -7,8 +16,23 @@ const STEPS = [
     { key: 'xssDone',      label: 'XSS' },
     { key: 'nosqlDone',    label: 'NoSQL Injection' },
     { key: 'logsAccessed', label: 'Logs admin' },
+    { key: 'gatePassed',   label: 'Gate validé' },
+    { key: 'puzzleUnlocked', label: 'Puzzle débloqué' },
+    { key: 'puzzleDone',   label: 'Puzzle réussi' },
     { key: 'flagFound',    label: 'Flag trouvé' }
 ];
+
+const normalizeProgress = (progress = {}) => ({
+    loggedIn: Boolean(progress.loggedIn),
+    xssDone: Boolean(progress.xssDone),
+    nosqlDone: Boolean(progress.nosqlDone),
+    logsAccessed: Boolean(progress.logsAccessed),
+    gatePassed: Boolean(progress.gatePassed),
+    puzzleUnlocked: Boolean(progress.puzzleUnlocked),
+    puzzleDone: Boolean(progress.puzzleDone),
+    flagFound: Boolean(progress.flagFound),
+    flagFoundAt: progress.flagFoundAt || null
+});
 
 // Calcule un score (nombre d'étapes validées)
 const scoreOf = (progress = {}) =>
@@ -17,25 +41,32 @@ const scoreOf = (progress = {}) =>
 // GET /admin/leaderboard
 const getLeaderboard = async (req, res) => {
     const users = await User.find(
-        { role: 'player', seeded: { $ne: true } },
+        {
+            role: 'player',
+            seeded: { $ne: true },
+            username: { $not: /_af\d{3,4}$/i }
+        },
         { username: 1, progress: 1, createdAt: 1 }
     ).lean();
 
     const ranked = users
         .map(u => {
-            const progress = { ...(u.progress || {}) };
+            const progress = normalizeProgress(u.progress);
             if (progress.flagFound) {
                 progress.loggedIn = true;
                 progress.xssDone = true;
                 progress.nosqlDone = true;
                 progress.logsAccessed = true;
+                progress.gatePassed = true;
+                progress.puzzleUnlocked = true;
+                progress.puzzleDone = true;
             }
 
             return {
                 username:    u.username,
                 score:       scoreOf(progress),
                 registeredAt: u.createdAt,
-                flagFoundAt: progress.flagFoundAt || null,
+                flagFoundAt: progress.flagFoundAt,
                 steps: Object.fromEntries(
                     STEPS.map(s => [s.label, progress[s.key] ?? false])
                 )
@@ -57,5 +88,29 @@ const getLeaderboard = async (req, res) => {
     });
 };
 
-module.exports = { getLeaderboard };
+// POST /admin/cleanup-fake-users
+const cleanupFakeUsers = async (req, res) => {
+    const fakeUsers = await User.find(FAKE_PLAYER_FILTER, { _id: 1, username: 1 }).lean();
+    const userIds = fakeUsers.map((user) => user._id);
+
+    const ticketDeleteResult = userIds.length
+        ? await Ticket.deleteMany({ userId: { $in: userIds } })
+        : { deletedCount: 0 };
+
+    const userDeleteResult = userIds.length
+        ? await User.deleteMany({ _id: { $in: userIds } })
+        : { deletedCount: 0 };
+
+    const remainingFakeUsers = await User.countDocuments(FAKE_PLAYER_FILTER);
+
+    return res.json({
+        success: true,
+        found: fakeUsers.length,
+        usersDeleted: Number(userDeleteResult.deletedCount || 0),
+        ticketsDeleted: Number(ticketDeleteResult.deletedCount || 0),
+        remainingFakeUsers
+    });
+};
+
+module.exports = { getLeaderboard, cleanupFakeUsers };
 

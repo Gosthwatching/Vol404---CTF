@@ -1,6 +1,10 @@
 ﻿// Controleur flag: gere token temporaire et validation finale du flag.
 const User = require('../models/User');
 
+const resolveProgressUserId = (req) => {
+    return req.session?.trackedPlayerId || req.session?.user?.id || null;
+};
+
 const airports = {
     94: "ORY",   // Val-de-Marne �?' Paris-Orly
     13: "MRS",   // Marseille
@@ -43,9 +47,10 @@ const checkFlag = async (req, res) => {
     }
 
     // Marquer l'etape finale comme validee pour l'eleve connecte.
-    if (req.session?.user) {
+    const progressUserId = resolveProgressUserId(req);
+    if (progressUserId) {
         await User.updateOne(
-            { _id: req.session.user.id, 'progress.flagFound': { $ne: true } },
+            { _id: progressUserId, 'progress.flagFound': { $ne: true } },
             { $set: { 'progress.flagFound': true, 'progress.flagFoundAt': new Date() } }
         );
     }

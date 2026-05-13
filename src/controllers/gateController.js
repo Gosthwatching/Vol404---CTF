@@ -4,8 +4,12 @@ const User = require('../models/User');
 const { vigenereEncode } = require('../utils/vigenere');
 const { getScanSession, markScanAsCompleted, markScanByToken } = require('../utils/scanSessions');
 
+const resolveProgressUserId = (req) => {
+    return req.session?.trackedPlayerId || req.session?.user?.id || null;
+};
+
 const markGateProgress = async (req) => {
-    const userId = req.session?.user?.id;
+    const userId = resolveProgressUserId(req);
     if (!userId) {
         return;
     }

@@ -1,11 +1,15 @@
 const User = require('../models/User');
 
+const resolveProgressUserId = (req) => {
+    return req.session?.trackedPlayerId || req.session?.user?.id || null;
+};
+
 const getAttackProgress = (req) => {
     return req.session?.attackProgress || { xssDone: false, nosqlDone: false };
 };
 
 const buildPuzzleAccessStatus = async (req) => {
-    const userId = req.session?.user?.id;
+    const userId = resolveProgressUserId(req);
 
     if (!userId) {
         return {
@@ -66,7 +70,7 @@ const requirePuzzleAccess = async (req, res, next) => {
             });
         }
 
-        const userId = req.session?.user?.id;
+        const userId = resolveProgressUserId(req);
         if (userId) {
             req.session.puzzleUnlocked = true;
             await User.updateOne(
