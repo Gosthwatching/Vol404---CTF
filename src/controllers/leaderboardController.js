@@ -104,24 +104,6 @@ const getLeaderboard = async (req, res) => {
     });
 };
 
-// POST /admin/cleanup-fake-users
-const cleanupFakeUsers = async (req, res) => {
-    const fakeUsers = await User.find(FAKE_PLAYER_FILTER, { _id: 1, username: 1 }).lean();
-    const userIds = fakeUsers.map((user) => user._id);
-
-    const deleteResult = await deleteUsersAndTickets(userIds);
-
-    const remainingFakeUsers = await User.countDocuments(FAKE_PLAYER_FILTER);
-
-    return res.json({
-        success: true,
-        found: fakeUsers.length,
-        usersDeleted: deleteResult.usersDeleted,
-        ticketsDeleted: deleteResult.ticketsDeleted,
-        remainingFakeUsers
-    });
-};
-
 // DELETE /admin/student/:userId
 const deleteStudent = async (req, res) => {
     const { userId } = req.params;
@@ -155,5 +137,22 @@ const deleteAllStudents = async (req, res) => {
     });
 };
 
-module.exports = { getLeaderboard, cleanupFakeUsers, deleteStudent, deleteAllStudents };
+// GET /admin/questionnaire-responses
+const getQuestionnaireResponses = async (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    const RESPONSES_FILE = path.join(__dirname, '../../questionnaire-responses.json');
+    
+    try {
+        if (!fs.existsSync(RESPONSES_FILE)) {
+            return res.json([]);
+        }
+        const all = JSON.parse(fs.readFileSync(RESPONSES_FILE, 'utf8'));
+        return res.json(all);
+    } catch (e) {
+        return res.json([]);
+    }
+};
+
+module.exports = { getLeaderboard, deleteStudent, deleteAllStudents, getQuestionnaireResponses };
 

@@ -5,7 +5,7 @@ const profMiddleware = require('../middleware/profMiddleware');
 const leaderboardController = require('../controllers/leaderboardController');
 
 router.get('/leaderboard', profMiddleware, leaderboardController.getLeaderboard);
-router.post('/cleanup-fake-users', profMiddleware, leaderboardController.cleanupFakeUsers);
+router.get('/questionnaire-responses', profMiddleware, leaderboardController.getQuestionnaireResponses);
 router.delete('/student/:userId', profMiddleware, leaderboardController.deleteStudent);
 router.delete('/students', profMiddleware, leaderboardController.deleteAllStudents);
 

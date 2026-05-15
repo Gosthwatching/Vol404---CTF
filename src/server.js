@@ -57,6 +57,7 @@ app.use('/gate',    require('./routes/gate'));
 app.use('/flag',    require('./routes/flag'));
 app.use('/admin',   require('./routes/admin'));
 app.use('/ctf',     require('./routes/ctf'));
+const questionnaireRoute = require('./routes/questionnaire');
 
 // Route racine �?' inscription si pas de session, sinon intro CTF
 app.get('/', (req, res) => {
@@ -66,6 +67,7 @@ app.get('/', (req, res) => {
     res.redirect('/register.html');
 });
 
+app.use('/ctf/questionnaire', questionnaireRoute);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Serveur lancé sur http://localhost:${PORT}`);
