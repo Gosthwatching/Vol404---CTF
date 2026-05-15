@@ -39,6 +39,11 @@
 		#refresh { margin-bottom: 1.5rem; background: #161b22; color: #58a6ff; border: 1px solid #30363d;
 			padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.85rem; }
 		#refresh:hover { background: #1c2128; }
+		.btn-danger {
+			background:#9b1c1c; color:#fff; border:1px solid #c73a3a; padding:0.35rem 0.75rem;
+			border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.78rem;
+		}
+		.btn-danger:hover { background:#b42323; }
 	</style>
 </head>
 <body>
@@ -56,7 +61,8 @@
 	<div id="board" style="display:none">
 		<p id="stats"></p>
 		<button id="refresh">🔄 Rafraîchir</button>
-		<button id="cleanup-fakes" style="margin-bottom:1.5rem; margin-left:0.5rem; background:#9b1c1c; color:#fff; border:1px solid #c73a3a; padding:0.4rem 1rem; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.85rem;">Supprimer faux comptes</button>
+		<button id="delete-all-students" class="btn-danger" style="margin-bottom:1.5rem; margin-left:0.5rem;">Supprimer tous les élèves</button>
+		<button id="cleanup-fakes" class="btn-danger" style="margin-bottom:1.5rem; margin-left:0.5rem;">Supprimer faux comptes</button>
 		<table>
 			<thead>
 				<tr id="table-head-row"></tr>
@@ -89,6 +95,7 @@
 				<th class="score">Score</th>
 				${stepHeaders}
 				<th>Heure du flag</th>
+				<th>Action</th>
 			`;
 		}
 
@@ -109,6 +116,26 @@
 			return data;
 		}
 
+		async function deleteStudent(key, userId) {
+			const res = await fetch(`/admin/student/${encodeURIComponent(userId)}?key=${encodeURIComponent(key)}`, {
+				method: 'DELETE'
+			});
+			const data = await res.json();
+			if (res.status === 403 || res.status === 401) throw new Error('Clé incorrecte.');
+			if (!res.ok) throw new Error(data.error || 'Suppression impossible.');
+			return data;
+		}
+
+		async function deleteAllStudents(key) {
+			const res = await fetch(`/admin/students?key=${encodeURIComponent(key)}`, {
+				method: 'DELETE'
+			});
+			const data = await res.json();
+			if (res.status === 403 || res.status === 401) throw new Error('Clé incorrecte.');
+			if (!res.ok) throw new Error(data.error || 'Suppression globale impossible.');
+			return data;
+		}
+
 		async function render(key) {
 			const data = await load(key);
 			const stepLabels = Array.isArray(data.steps) ? data.steps : [];
@@ -125,9 +152,10 @@
 					<td class="score">${u.score} / ${scoreMax}</td>
 					${stepLabels.map((label) => cell(u.steps && u.steps[label])).join('')}
 					<td class="flag-time">${fmt(u.flagFoundAt)}</td>
+					<td><button type="button" class="btn-danger delete-student" data-user-id="${u.userId}">Supprimer</button></td>
 				</tr>
 			`).join('');
-			const emptyColspan = 4 + stepLabels.length;
+			const emptyColspan = 5 + stepLabels.length;
 			document.getElementById('rows').innerHTML = rows || `<tr><td colspan="${emptyColspan}" style="color:#8b949e;text-align:center">Aucun élève inscrit</td></tr>`;
 		}
 
@@ -147,6 +175,59 @@
 		});
 
 		document.getElementById('refresh').addEventListener('click', () => render(savedKey));
+
+		document.getElementById('rows').addEventListener('click', async (event) => {
+			if (!event.target.classList.contains('delete-student')) {
+				return;
+			}
+
+			if (!savedKey) {
+				return;
+			}
+
+			const userId = event.target.getAttribute('data-user-id');
+			const row = event.target.closest('tr');
+			const username = row ? row.querySelector('.username')?.textContent : 'cet élève';
+			const err = document.getElementById('error');
+			err.textContent = '';
+
+			if (!window.confirm(`Supprimer le compte de ${username} ?`)) {
+				return;
+			}
+
+			try {
+				const result = await deleteStudent(savedKey, userId);
+				await render(savedKey);
+				err.style.color = '#3fb950';
+				err.textContent = `Compte supprimé: ${result.deletedUser}.`;
+			} catch (ex) {
+				err.style.color = '#f85149';
+				err.textContent = ex.message;
+			}
+		});
+
+		document.getElementById('delete-all-students').addEventListener('click', async () => {
+			if (!savedKey) {
+				return;
+			}
+
+			const err = document.getElementById('error');
+			err.textContent = '';
+
+			if (!window.confirm('Supprimer tous les comptes élèves ? Cette action est irréversible.')) {
+				return;
+			}
+
+			try {
+				const result = await deleteAllStudents(savedKey);
+				await render(savedKey);
+				err.style.color = '#3fb950';
+				err.textContent = `Suppression globale terminée: ${result.usersDeleted} compte(s), ${result.ticketsDeleted} billet(s).`;
+			} catch (ex) {
+				err.style.color = '#f85149';
+				err.textContent = ex.message;
+			}
+		});
 
 		document.getElementById('cleanup-fakes').addEventListener('click', async () => {
 			if (!savedKey) return;

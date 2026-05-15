@@ -1,3 +1,59 @@
+/* === Styles pour la page questionnaire === */
+.questionnaire-form {
+  max-width: 480px;
+  margin: 3rem auto 0 auto;
+  background: #181c2a;
+  border-radius: 10px;
+  box-shadow: 0 2px 16px #0004;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  color: #e6edf3;
+}
+.questionnaire-form ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+.questionnaire-form li {
+  margin-bottom: 1.2rem;
+}
+.questionnaire-form label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+  color: #58a6ff;
+}
+.questionnaire-form input[type="text"],
+.questionnaire-form input[type="email"] {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  background: #23263a;
+  color: #e6edf3;
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+}
+.questionnaire-form button[type="submit"] {
+  background: #238636;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+}
+.questionnaire-form button[type="submit"]:hover {
+  background: #2ea043;
+}
+.questionnaire-form #questionnaire-message {
+  margin-top: 1em;
+  color: #3fb950;
+  font-weight: bold;
+  min-height: 1.2em;
+}
 /* =========================================================
   VOL404 CSS
   index.html / login.html / home.html / reservation.html / billet.html / passengers.html

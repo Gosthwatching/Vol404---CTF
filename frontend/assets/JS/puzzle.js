@@ -32,6 +32,8 @@ const pieceImageUrls = Array.from({ length: 20 }, (_, index) => {
   return number === 1 ? "assets/img/avion.png" : `assets/img/avion${number}.png`;
 });
 
+const FINAL_FLAG = "CTF{ORY_boarding_complete}";
+
 const container = document.getElementById("puzzle-container");
 const counter = document.getElementById("puzzle-counter");
 const message = document.getElementById("puzzle-message");
@@ -99,7 +101,8 @@ function initGame() {
       if (state.foundPieces.length === 15) {
         state.completed = true;
         markPuzzleAsCompleted();
-        alert("Bravo. Puzzle termine.");
+        message.textContent = `Bravo. Flag: ${FINAL_FLAG}`;
+        alert(`Flag: ${FINAL_FLAG} \nRend toi sur la page /questionnaire.html pour valider ton CTF.`);
       } else {
         message.textContent = "Bonne piece. Continue.";
       }

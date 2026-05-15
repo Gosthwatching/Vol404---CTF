@@ -38,6 +38,21 @@ const normalizeProgress = (progress = {}) => ({
 const scoreOf = (progress = {}) =>
     STEPS.filter(s => progress[s.key]).length;
 
+const deleteUsersAndTickets = async (userIds = []) => {
+    const ticketDeleteResult = userIds.length
+        ? await Ticket.deleteMany({ userId: { $in: userIds } })
+        : { deletedCount: 0 };
+
+    const userDeleteResult = userIds.length
+        ? await User.deleteMany({ _id: { $in: userIds } })
+        : { deletedCount: 0 };
+
+    return {
+        usersDeleted: Number(userDeleteResult.deletedCount || 0),
+        ticketsDeleted: Number(ticketDeleteResult.deletedCount || 0)
+    };
+};
+
 // GET /admin/leaderboard
 const getLeaderboard = async (req, res) => {
     const users = await User.find(
@@ -63,6 +78,7 @@ const getLeaderboard = async (req, res) => {
             }
 
             return {
+                userId:      String(u._id),
                 username:    u.username,
                 score:       scoreOf(progress),
                 registeredAt: u.createdAt,
@@ -93,24 +109,51 @@ const cleanupFakeUsers = async (req, res) => {
     const fakeUsers = await User.find(FAKE_PLAYER_FILTER, { _id: 1, username: 1 }).lean();
     const userIds = fakeUsers.map((user) => user._id);
 
-    const ticketDeleteResult = userIds.length
-        ? await Ticket.deleteMany({ userId: { $in: userIds } })
-        : { deletedCount: 0 };
-
-    const userDeleteResult = userIds.length
-        ? await User.deleteMany({ _id: { $in: userIds } })
-        : { deletedCount: 0 };
+    const deleteResult = await deleteUsersAndTickets(userIds);
 
     const remainingFakeUsers = await User.countDocuments(FAKE_PLAYER_FILTER);
 
     return res.json({
         success: true,
         found: fakeUsers.length,
-        usersDeleted: Number(userDeleteResult.deletedCount || 0),
-        ticketsDeleted: Number(ticketDeleteResult.deletedCount || 0),
+        usersDeleted: deleteResult.usersDeleted,
+        ticketsDeleted: deleteResult.ticketsDeleted,
         remainingFakeUsers
     });
 };
 
-module.exports = { getLeaderboard, cleanupFakeUsers };
+// DELETE /admin/student/:userId
+const deleteStudent = async (req, res) => {
+    const { userId } = req.params;
+
+    const user = await User.findOne({ _id: userId, role: 'player' }, { _id: 1, username: 1 }).lean();
+    if (!user) {
+        return res.status(404).json({ error: 'Eleve introuvable.' });
+    }
+
+    const deleteResult = await deleteUsersAndTickets([user._id]);
+
+    return res.json({
+        success: true,
+        deletedUser: user.username,
+        usersDeleted: deleteResult.usersDeleted,
+        ticketsDeleted: deleteResult.ticketsDeleted
+    });
+};
+
+// DELETE /admin/students
+const deleteAllStudents = async (req, res) => {
+    const students = await User.find({ role: 'player' }, { _id: 1 }).lean();
+    const userIds = students.map((student) => student._id);
+    const deleteResult = await deleteUsersAndTickets(userIds);
+
+    return res.json({
+        success: true,
+        found: students.length,
+        usersDeleted: deleteResult.usersDeleted,
+        ticketsDeleted: deleteResult.ticketsDeleted
+    });
+};
+
+module.exports = { getLeaderboard, cleanupFakeUsers, deleteStudent, deleteAllStudents };
 
