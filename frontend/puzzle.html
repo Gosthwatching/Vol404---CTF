@@ -22,11 +22,34 @@
             <button id="puzzle-restart" type="button" class="btn btn-outline-light btn-sm mb-2">
                 Recommencer
             </button>
+            <button id="puzzle-show-popup" type="button" class="btn btn-info btn-sm mb-2" style="display:none;">
+                Voir l'image
+            </button>
             <div id="puzzle-container" class="puzzle-container mt-2">
                 <!-- Le puzzle sera généré ici par JavaScript -->
             </div>
         </section>
     </main>
+
+    <div class="modal fade" id="puzzle-completion-popup" tabindex="-1" aria-labelledby="puzzleCompletionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark text-light border border-secondary">
+                <div class="modal-header border-secondary">
+                    <h2 id="puzzleCompletionTitle" class="modal-title fs-5">Puzzle reussie</h2>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="assets/img/cockpitCTF.png" alt="Indice crypte" class="img-fluid rounded border border-secondary mb-3" style="max-height: 570px; object-fit: cover;">
+                    <p class="mb-2">L'image est un indice. Conseil : Télécharge l'image pour l'examiner de plus près.</p>
+                    <p class="mb-2">Rend toi sur la page /questionnaire.html pour valider ton CTF.</p>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <footer class="app-footer">
         <p>&copy; 2026 Vol404 CTF - Designed by <strong>Yarno Chedemail</strong></p>

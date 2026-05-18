@@ -91,13 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(data)
-    }).then(res => {
+    }).then(async (res) => {
       const msg = document.getElementById("questionnaire-message");
+      const payload = await res.json().catch(() => ({}));
       if (res.ok) {
         msg.textContent = "Réponses envoyées !";
+        msg.style.color = "green";
         form.reset();
       } else {
-        msg.textContent = "Erreur lors de l'envoi.";
+        msg.textContent = payload.error || "Erreur lors de l'envoi.";
+        msg.style.color = "red";
       }
     });
   });

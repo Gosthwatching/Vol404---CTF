@@ -37,7 +37,18 @@ const FINAL_FLAG = "CTF{ORY_boarding_complete}";
 const container = document.getElementById("puzzle-container");
 const counter = document.getElementById("puzzle-counter");
 const message = document.getElementById("puzzle-message");
+
 const restartButton = document.getElementById("puzzle-restart");
+const showPopupButton = document.getElementById("puzzle-show-popup");
+const completionPopupElement = document.getElementById("puzzle-completion-popup");
+const flagTextElement = document.getElementById("puzzle-flag-text");
+
+let puzzleAlreadyCompleted = false;
+
+let completionModal = null;
+if (window.bootstrap && completionPopupElement) {
+  completionModal = new window.bootstrap.Modal(completionPopupElement);
+}
 
 function markPuzzleAsCompleted() {
   fetch("/ctf/puzzle-complete", {
@@ -47,6 +58,16 @@ function markPuzzleAsCompleted() {
   }).catch(() => {
     // Keep game UX responsive even if progress sync fails.
   });
+}
+
+function showCompletionPopup(flag) {
+  if (flagTextElement) {
+    flagTextElement.textContent = `Flag: ${flag}`;
+  }
+
+  if (completionModal) {
+    completionModal.show();
+  }
 }
 
 function shuffle(array) {
@@ -65,7 +86,7 @@ function initGame() {
   shuffle(pieces);
   container.innerHTML = "";
   counter.textContent = "Pieces correctes : 0/15";
-  message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege. Memorise les positions.";
+  message.textContent = "Trouve les 15 bonnes pieces sans cliquer sur un piege.";
 
   pieces.forEach((piece) => {
     const button = document.createElement("button");
@@ -101,8 +122,9 @@ function initGame() {
       if (state.foundPieces.length === 15) {
         state.completed = true;
         markPuzzleAsCompleted();
-        message.textContent = `Bravo. Flag: ${FINAL_FLAG}`;
-        alert(`Flag: ${FINAL_FLAG} \nRend toi sur la page /questionnaire.html pour valider ton CTF.`);
+        showCompletionPopup(FINAL_FLAG);
+        puzzleAlreadyCompleted = true;
+        if (showPopupButton) showPopupButton.style.display = "inline-block";
       } else {
         message.textContent = "Bonne piece. Continue.";
       }
@@ -112,8 +134,21 @@ function initGame() {
   });
 }
 
+
 restartButton.addEventListener("click", () => {
   initGame();
+  // Cacher le bouton pop-up si on recommence
+  if (showPopupButton) showPopupButton.style.display = puzzleAlreadyCompleted ? "inline-block" : "none";
 });
+
+if (showPopupButton) {
+  showPopupButton.addEventListener("click", () => {
+    if (puzzleAlreadyCompleted) {
+      showCompletionPopup(FINAL_FLAG);
+    }
+  });
+  // Afficher le bouton si le puzzle a déjà été réussi (ex: refresh après victoire)
+  showPopupButton.style.display = puzzleAlreadyCompleted ? "inline-block" : "none";
+}
 
 initGame();

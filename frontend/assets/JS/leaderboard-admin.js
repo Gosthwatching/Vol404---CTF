@@ -21,7 +21,7 @@ function renderHead(stepLabels) {
 		<th>Élève</th>
 		<th class="score">Score</th>
 		${stepHeaders}
-		<th>Heure du flag</th>
+		<th>Heure questionnaire</th>
 		<th>Réponses</th>
 		<th>Action</th>
 	`;
@@ -65,9 +65,9 @@ async function render(key) {
 	const stepLabels = Array.isArray(data.steps) ? data.steps : [];
 	renderHead(stepLabels);
 	const scoreMax = stepLabels.length || 1;
-	const foundCount = data.leaderboard.filter((u) => u.steps && u.steps['Flag trouvé']).length;
+	const validatedCount = data.leaderboard.filter((u) => u.steps && u.steps['Questionnaire validé']).length;
 	document.getElementById('stats').textContent =
-		`${data.total} élève(s) inscrit(s) - ${foundCount} flag(s) trouvé(s)`;
+		`${data.total} élève(s) inscrit(s) - ${validatedCount} questionnaire(s) validé(s)`;
 
 	const rows = data.leaderboard.map(u => `
 		<tr>
@@ -75,8 +75,8 @@ async function render(key) {
 			<td class="username">${u.username}</td>
 			<td class="score">${u.score} / ${scoreMax}</td>
 			${stepLabels.map((label) => cell(u.steps && u.steps[label])).join('')}
-			<td class="flag-time">${fmt(u.flagFoundAt)}</td>
-			<td><button type="button" class="btn-info view-responses" data-username="${u.username}">Voir</button></td>
+			<td class="flag-time">${fmt(u.questionnaireValidatedAt)}</td>
+			<td><button type="button" class="btn-info view-responses" data-username="${u.username}" data-user-id="${u.userId}">Voir</button></td>
 			<td><button type="button" class="btn-danger delete-student" data-user-id="${u.userId}">Supprimer</button></td>
 		</tr>
 	`).join('');
@@ -105,9 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('rows').addEventListener('click', async (event) => {
 		if (event.target.classList.contains('view-responses')) {
 			const username = event.target.getAttribute('data-username');
+			const userId = event.target.getAttribute('data-user-id');
 			try {
 				const allResponses = await getQuestionnaireResponses(savedKey);
-				const userResponses = allResponses.filter(r => r.user_name === username);
+				const userResponses = allResponses.filter((r) => {
+					const byUserId = String(r.userId || '') === String(userId || '');
+					const byUsername = String(r.username || '').toLowerCase() === String(username || '').toLowerCase();
+					const byLegacyUserName = String(r.user_name || '').toLowerCase() === String(username || '').toLowerCase();
+					return byUserId || byUsername || byLegacyUserName;
+				});
 				if (userResponses.length === 0) {
 					alert(`Aucune réponse pour ${username}`);
 					return;

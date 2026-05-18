@@ -36,7 +36,9 @@ const userSchema = new mongoose.Schema({
         ctfFinished:   { type: Boolean, default: false },
         flagFound:     { type: Boolean, default: false },
         firstLoginAt:  { type: Date,    default: null  },
-        flagFoundAt:   { type: Date,    default: null  }
+        flagFoundAt:   { type: Date,    default: null  },
+        questionnaireValidated: { type: Boolean, default: false },
+        questionnaireValidatedAt: { type: Date, default: null }
     }
 }, { timestamps: true });
 
