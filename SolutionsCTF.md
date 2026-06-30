@@ -31,8 +31,11 @@ L'app est accessible sur **http://localhost:3000**
 3. NoSQL Injection  → bypass du mot de passe avec { $ne: '' }
 4. Logs admin       → accéder à /auth/logs sans être admin
 5. QR code + gate   → scanner le billet pour passer la porte
-6. Cryptanalyse     → décoder RVN (Vigenère) + JN18ER (QTH Locator)
-7. Flag final       → soumettre le code département 94 → CTF{ORY_boarding_complete}
+6. Cryptanalyse     → décoder RVN (Vigenère) + JN18ER (QTH Locator) → trouver 94
+7. Déblocage        → envoyer un token non vide à /flag/unlock
+8. Soumettre 94     → POST /flag {code: 94} → redirection vers /puzzle.html
+9. Puzzle           → trouver 15 pièces correctes (5 pièges) → popup image + flag
+10. Questionnaire   → /questionnaire.html → saisir le flag CTF{ORY_boarding_complete}
 ```
 
 ---
@@ -144,9 +147,29 @@ $flag
 
 **Résultat attendu :**
 
+```json
+{ "success": true, "message": "Code valide (94/ORY). Redirection vers le puzzle.", "redirect": "/puzzle.html" }
 ```
-CTF{ORY_boarding_complete}
-```
+
+> Le flag n'est pas retourné directement par l'API — il est affiché dans la popup du puzzle.
+
+### Étape 9 — Puzzle (navigateur)
+
+1. Ouvrir http://localhost:3000/puzzle.html
+2. Cliquer sur les **15 pièces correctes** parmi les 20 affichées (5 sont des pièges)
+   - Un clic sur un piège remet le compteur à zéro
+   - Les pièces sont mélangées aléatoirement à chaque partie
+3. Une fois les 15 bonnes pièces trouvées, une **popup** s'ouvre automatiquement avec :
+   - L'image `cockpitCTF.png` (indice visuel)
+   - Le flag : **`CTF{ORY_boarding_complete}`**
+   - Un conseil : télécharger l'image pour l'examiner
+
+### Étape 10 — Questionnaire final
+
+1. Ouvrir http://localhost:3000/questionnaire.html
+2. Répondre aux questions affichées (tirées aléatoirement parmi un pool)
+3. Saisir le flag dans le champ **Flag final** : `CTF{ORY_boarding_complete}`
+4. Soumettre → valide la complétion du CTF
 
 ---
 
@@ -333,18 +356,34 @@ fetch('/flag', {
 **Ce que l'étudiant doit voir à la fin :**
 
 ```json
-{ "flag": "CTF{ORY_boarding_complete}" }
+{ "success": true, "message": "Code valide (94/ORY). Redirection vers le puzzle.", "redirect": "/puzzle.html" }
 ```
 
 Si l'étudiant reçoit une erreur :
 - `403` → la zone n'a pas été déverrouillée, refaire l'étape 7
 - `400` → mauvaise valeur envoyée, revérifier l'étape 6
 
-**Résultat attendu :**
+> Le flag n'est pas dans la réponse API — il apparaît dans le puzzle à l'étape suivante.
 
-```
-CTF{ORY_boarding_complete}
-```
+### Étape 9 — Puzzle
+
+1. Naviguer vers http://localhost:3000/puzzle.html (ou cliquer le lien de redirection)
+2. **20 pièces** sont affichées, dont **5 pièges** (mélangées aléatoirement)
+3. Cliquer sur les **15 pièces correctes** sans toucher un piège
+   - Un piège remet le compteur à zéro et annonce « Game over »
+   - Le bouton **Recommencer** relance une nouvelle partie mélangée
+4. Quand les 15 bonnes pièces sont trouvées, une popup s'ouvre avec :
+   - L'image `cockpitCTF.png`
+   - Le flag : **`CTF{ORY_boarding_complete}`**
+   - Un conseil pour télécharger l'image
+5. Le bouton **Voir l'image** reste disponible pour rouvrir la popup
+
+### Étape 10 — Questionnaire final
+
+1. Aller sur http://localhost:3000/questionnaire.html
+2. Répondre aux questions (tirées aléatoirement parmi un pool de 10)
+3. Saisir le flag dans le champ **Flag final** : `CTF{ORY_boarding_complete}`
+4. Cliquer **Envoyer** → confirmation affichée → CTF terminé
 
 ---
 
